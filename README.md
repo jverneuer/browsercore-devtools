@@ -5,31 +5,18 @@
 [![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jverneuer/browsercore-devtools/main/coverage/badge.json)](https://github.com/jverneuer/browsercore-devtools/blob/main/COVERAGE.md)
 [![lint](https://img.shields.io/github/actions/workflow/status/jverneuer/browsercore-devtools/ci.yml?label=lint)](https://github.com/jverneuer/browsercore-devtools/actions/workflows/ci.yml)
 
-Developer tooling — packet inspector, TLS handshake visualizer, HTTP/2 frame
-viewer, profile diff, certificate inspector, and benchmark CLI. Depends on the
-library but is NOT required by it.
+Developer tooling for the browsercore stack: packet inspector, TLS/HTTP visualizers,
+profile diff, certificate inspector, and the `network-devtools` CLI. Depends on the
+library but is NOT required by it — every tool here consumes the public API of the
+lower-level packages, and nothing here is imported by them.
 
-## Responsibility
+## Install
 
-Make protocol behavior observable and debuggable during development. Every
-tool here consumes the public API of the lower-level packages; nothing here is
-imported by them.
+```bash
+npm install @browsercore/devtools
+```
 
-## Tools
-
-- **Packet inspector** — capture and inspect raw protocol frames by direction
-  and protocol.
-- **TLS handshake visualizer** — render a captured TLS handshake as a
-  human-readable ASCII trace.
-- **HTTP/2 frame viewer** — decode and display HTTP/2 frames (SETTINGS,
-  HEADERS, DATA, WINDOW_UPDATE, …).
-- **Profile diff** — compare two browser profiles field-by-field.
-- **Certificate inspector** — parse and display an X.509 certificate's subject,
-  issuer, SANs, and fingerprint.
-- **Benchmark CLI** — run latency/throughput benchmarks from the terminal via
-  `network-devtools bench`.
-
-## Public API
+## Quick usage
 
 ```ts
 import {
@@ -37,48 +24,54 @@ import {
     visualizeTlsHandshake,
     diffProfiles,
     inspectCertificate,
-    DevtoolsError,
 } from "@browsercore/devtools";
 
+// Capture frames into a live session, then render a TLS handshake trace:
 const session = createInspectorSession();
-session.addFrame({
-    direction: "sent",
-    protocol: "tls",
-    bytes: clientHello,
-    decoded: null,
-});
-console.log(session.frames.length);
+session.addFrame({ direction: "sent", protocol: "tls", bytes: clientHello, decoded: null });
+console.log(visualizeTlsHandshake(session));
 
-// Compare two profiles:
+// Diff two browser profiles field-by-field:
 const diff = diffProfiles("chrome-140" as never, "firefox-135" as never);
 console.log(diff.differences);
+
+// Parse a PEM/DER X.509 certificate:
+const info = inspectCertificate(pemBytes);
+console.log(info.subject, info.fingerprintSha256);
 ```
 
-## Types
+## Public API
 
 | Export | Kind | Purpose |
 | --- | --- | --- |
 | `createInspectorSession()` | function | Start an empty inspection session |
-| `decodeTlsRecord()` | function | Decode a TLS record (stubbed) |
-| `decodeHttp2Frame()` | function | Decode an HTTP/2 frame (stubbed) |
-| `visualizeTlsHandshake()` | function | Render a TLS trace (stubbed) |
-| `visualizeHttp2Stream()` | function | Render an HTTP/2 trace (stubbed) |
-| `diffProfiles()` | function | Diff two browser profiles (stubbed) |
-| `inspectCertificate()` | function | Parse an X.509 certificate (stubbed) |
-| `InspectionSession` | interface | Live session with frames + filter |
-| `PacketFrame` | interface | A single captured frame |
-| `CertInfo` | interface | Parsed certificate summary |
-| `DevtoolsError` | class | Base typed error |
+| `decodeTlsRecord()` | function | Decode a TLS record from raw bytes |
+| `decodeHttp2Frame()` | function | Decode an HTTP/2 frame header + payload |
+| `decodeHttp1Message()` | function | Parse an HTTP/1.1 request/response |
+| `visualizeTlsHandshake()` | function | Render a captured TLS handshake as an ASCII trace |
+| `visualizeHttp2Stream()` | function | Render captured HTTP/2 frames as an ASCII trace |
+| `diffProfiles()` | function | Compare two browser profiles field-by-field |
+| `inspectCertificate()` | function | Parse a PEM/DER X.509 certificate into a summary |
+| `exportToJson()` | function | Stable, human-readable JSON (2-space indent) |
+| `exportToHtml()` | function | Render a value as a self-contained HTML document |
+| `assertNever()` | function | Exhaustiveness check for `switch` over unions |
+| `createId()` | function | Unique, branded-id generator |
+| `InspectionSession` | interface | Live session: append frames, filter, visualize |
+| `PacketFrame` | interface | A single captured frame (direction, protocol, bytes) |
+| `PacketDirection` | union | `"sent" \| "received"` |
+| `PacketProtocol` | union | `"tls" \| "http2" \| "http1" \| "tcp"` |
+| `DecodedTlsRecord` | interface | Decoded TLS record (content type, version, fragments) |
+| `DecodedHttp2Frame` | interface | Decoded HTTP/2 frame (type, flags, streamId, payload) |
+| `DecodedHttp1Message` | interface | Parsed HTTP/1.1 request/response |
+| `CertInfo` | interface | Parsed certificate summary (subject, issuer, SAN, fingerprint) |
+| `ProfileDiff` / `ProfileDiffEntry` | interface | Result of diffing two profiles |
+| `InspectorSessionId` | branded type | Branded session identifier |
+| `DevtoolsError` | class | Base typed error (carries `kind` + `cause`) |
+| `CertParseError` | class | Certificate could not be parsed |
+| `TlsDecodeError` | class | TLS record could not be decoded |
+| `Http2DecodeError` | class | HTTP/2 frame could not be decoded |
+| `ProfileDiffError` | class | Profile diff could not be computed |
 
-## Dependency graph
+## License
 
-```
-@browsercore/devtools
-  └─ @browsercore/fetch  @browsercore/http2  @browsercore/http1  @browsercore/cookies
-        └─ @browsercore/profiles  @browsercore/tls  @browsercore/crypto
-              └─ @browsercore/transport
-                    └─ node:net / node:crypto
-```
-
-`@browsercore/devtools` sits at the very top — it depends on everything and nothing
-depends on it.
+MIT
