@@ -9,37 +9,37 @@ is independently useful.
 filtering are implemented and tested. This is the foundation every visualizer
 builds on.
 
-## Step 2 — TLS record decoder/visualizer
+## Step 2 — TLS record decoder/visualizer (IMPLEMENTED, UNTESTED)
 
 Implement `decodeTlsRecord` (content type, version, handshake message type) and
 `visualizeTlsHandshake` (ASCII trace: ClientHello → ServerHello → … → Finished).
 
-## Step 3 — HTTP/2 frame decoder/visualizer
+## Step 3 — HTTP/2 frame decoder/visualizer (IMPLEMENTED, UNTESTED)
 
 Implement `decodeHttp2Frame` (9-octet header + typed payload per frame type)
 and `visualizeHttp2Stream` (ASCII trace of SETTINGS/HEADERS/DATA/WINDOW_UPDATE).
 
-## Step 4 — HTTP/1.1 message viewer
+## Step 4 — HTTP/1.1 message viewer (NOT STARTED)
 
 Add an HTTP/1.1 message decoder that splits requests/responses into status line,
 headers, and body, and renders them as readable text.
 
-## Step 5 — Profile diff tool
+## Step 5 — Profile diff tool (IMPLEMENTED, UNTESTED)
 
 Implement `diffProfiles` to walk two profile objects field-by-field and report
 every path where values differ (cipher suites, extensions, pseudo-headers, …).
 
-## Step 6 — Certificate inspector (parse + display X.509)
+## Step 6 — Certificate inspector (parse + display X.509) (IMPLEMENTED, UNTESTED)
 
 Implement `inspectCertificate`: parse DER or PEM, extract subject, issuer, SANs,
 validity period, and SHA-256 fingerprint.
 
-## Step 7 — Benchmark CLI
+## Step 7 — Benchmark CLI (NOT STARTED)
 
 Wire `network-devtools bench` to the `@browsercore/testing` benchmark suite so a
 developer can run `network-devtools bench tls --iterations 100` from a terminal.
 
-## Step 8 — Export (JSON/HTML reports)
+## Step 8 — Export (JSON/HTML reports) (NOT STARTED)
 
 Add exporters so an inspection session or profile diff can be written to JSON
 or rendered as a self-contained HTML report for sharing.

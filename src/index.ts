@@ -7,9 +7,10 @@
  */
 
 export { createInspectorSession, decodeTlsRecord, decodeHttp2Frame } from "./inspector/inspector.js";
-export { visualizeTlsHandshake, visualizeHttp2Stream } from "./visualizer/visualizer.js";
+export { visualizeTlsHandshake, visualizeHttp2Stream, decodeHttp1Message } from "./visualizer/visualizer.js";
 export { diffProfiles } from "./diff/profileDiff.js";
 export { inspectCertificate } from "./cert/certInspector.js";
+export { exportToJson, exportToHtml } from "./exporters.js";
 
 export {
     DevtoolsError,
@@ -21,6 +22,7 @@ export {
 
 export type {
     CertInfo,
+    DecodedHttp1Message,
     DecodedHttp2Frame,
     DecodedTlsRecord,
     InspectionSession,

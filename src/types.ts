@@ -49,19 +49,33 @@ export interface ProfileDiff {
     readonly differences: ReadonlyArray<ProfileDiffEntry>;
 }
 
-/** Decoded TLS record (stubbed shape until the decoder lands). */
+/** Decoded TLS record — content type, formatted "major.minor (label)" version, and the raw fragment(s). */
 export interface DecodedTlsRecord {
     readonly contentType: number;
     readonly version: string;
     readonly fragments: ReadonlyArray<Uint8Array>;
 }
 
-/** Decoded HTTP/2 frame (stubbed shape until the decoder lands). */
+/** Decoded HTTP/2 frame — 9-octet header fields plus the raw payload bytes. */
 export interface DecodedHttp2Frame {
     readonly type: number;
     readonly flags: number;
     readonly streamId: number;
     readonly payload: Uint8Array;
+}
+
+/** Decoded HTTP/1.1 message — a parsed request or response. */
+export interface DecodedHttp1Message {
+    /** Whether this is a request line or a status line. */
+    readonly kind: "request" | "response";
+    /** The raw start line (request line or status line). */
+    readonly statusLine: string;
+    /** Response status code — `null` for requests. */
+    readonly statusCode: number | null;
+    /** Parsed headers (lowercased names). */
+    readonly headers: ReadonlyMap<string, string>;
+    /** Best-effort decoded body preview (may be empty). */
+    readonly bodyPreview: string;
 }
 
 /** Parsed X.509 certificate summary. */
