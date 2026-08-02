@@ -1,0 +1,43 @@
+{
+  "name": "@network/devtools",
+  "version": "0.1.0",
+  "description": "Developer tooling — packet inspector, TLS/HTTP2 visualizer, profile diff, certificate inspector, benchmark CLI.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "network-devtools": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "LICENSE", "README.md"],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run clean && npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@network/cookies": "workspace:*",
+    "@network/crypto": "workspace:*",
+    "@network/fetch": "workspace:*",
+    "@network/http1": "workspace:*",
+    "@network/http2": "workspace:*",
+    "@network/profiles": "workspace:*",
+    "@network/tls": "workspace:*",
+    "@network/transport": "workspace:*"
+  }
+}
