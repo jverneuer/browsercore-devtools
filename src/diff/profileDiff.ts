@@ -10,6 +10,7 @@
 import { getProfile, UnknownProfileError, type ProfileId } from "@browsercore/profiles";
 import { ProfileDiffError } from "../errors.js";
 import type { ProfileDiff, ProfileDiffEntry } from "../types.js";
+import { toErrorOptions } from "../utils.js";
 
 /** Compare two scalar values for equality (handles primitives + Date). */
 function leafEqual(a: unknown, b: unknown): boolean {
@@ -54,13 +55,10 @@ function diffLeaves(
         return;
     }
     if (isPlainObject(a) && isPlainObject(b)) {
-        const keys = new Set<string>([
-            ...Object.keys(a as Record<string, unknown>),
-            ...Object.keys(b as Record<string, unknown>),
-        ]);
+        const keys = new Set<string>([...Object.keys(a), ...Object.keys(b)]);
         for (const key of Array.from(keys).sort()) {
-            const childA = (a as Record<string, unknown>)[key];
-            const childB = (b as Record<string, unknown>)[key];
+            const childA = a[key];
+            const childB = b[key];
             const childPath = path === "" ? key : `${path}/${key}`;
             if (childA === undefined) {
                 out.push({ path: childPath, a: "<missing>", b: childB });
@@ -102,8 +100,7 @@ export function diffProfiles(a: ProfileId, b: ProfileId): ProfileDiff {
         if (err instanceof ProfileDiffError) {
             throw err;
         }
-        const cause = err instanceof Error ? err : undefined;
         const message = `failed to diff profiles: ${err instanceof Error ? err.message : String(err)}`;
-        throw new ProfileDiffError(message, cause === undefined ? undefined : { cause });
+        throw new ProfileDiffError(message, toErrorOptions(err));
     }
 }

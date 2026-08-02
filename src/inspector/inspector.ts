@@ -9,14 +9,8 @@
 import { parseRecordHeader, RECORD_HEADER_SIZE } from "@browsercore/tls";
 import { FRAME_HEADER_LENGTH, parseFrameHeader } from "@browsercore/http2";
 import { Http2DecodeError, TlsDecodeError } from "../errors.js";
-import type {
-    DecodedHttp2Frame,
-    DecodedTlsRecord,
-    InspectionSession,
-    InspectorSessionId,
-    PacketFrame,
-} from "../types.js";
-import { createId } from "../utils.js";
+import type { DecodedHttp2Frame, DecodedTlsRecord, InspectionSession, PacketFrame } from "../types.js";
+import { createInspectorSessionId, toErrorOptions } from "../utils.js";
 
 /** TLS record content-type names, for the decoded `version` field. */
 const TLS_CONTENT_TYPES: Readonly<Record<number, string>> = {
@@ -46,7 +40,7 @@ const HTTP2_FRAME_TYPES: Readonly<Record<number, string>> = {
  */
 export function createInspectorSession(): InspectionSession {
     const frames: PacketFrame[] = [];
-    const id = createId("insp") as InspectorSessionId;
+    const id = createInspectorSessionId();
     return {
         id,
         frames: frames as ReadonlyArray<PacketFrame>,
@@ -86,9 +80,8 @@ export function decodeTlsRecord(bytes: Uint8Array): DecodedTlsRecord {
             fragments: [fragment],
         };
     } catch (err) {
-        const cause = err instanceof Error ? err : undefined;
         const message = `failed to decode TLS record: ${err instanceof Error ? err.message : String(err)}`;
-        throw new TlsDecodeError(message, cause === undefined ? undefined : { cause });
+        throw new TlsDecodeError(message, toErrorOptions(err));
     }
 }
 
@@ -111,9 +104,8 @@ export function decodeHttp2Frame(bytes: Uint8Array): DecodedHttp2Frame {
             payload,
         };
     } catch (err) {
-        const cause = err instanceof Error ? err : undefined;
         const message = `failed to decode HTTP/2 frame: ${err instanceof Error ? err.message : String(err)}`;
-        throw new Http2DecodeError(message, cause === undefined ? undefined : { cause });
+        throw new Http2DecodeError(message, toErrorOptions(err));
     }
 }
 

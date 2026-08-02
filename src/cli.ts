@@ -11,7 +11,7 @@ import { createInspectorSession } from "./inspector/inspector.js";
 import { visualizeTlsHandshake, visualizeHttp2Stream } from "./visualizer/visualizer.js";
 import { diffProfiles } from "./diff/profileDiff.js";
 import { inspectCertificate } from "./cert/certInspector.js";
-import type { PacketProtocol } from "./types.js";
+import type { InspectionSession, PacketProtocol } from "./types.js";
 import type { ProfileId } from "@browsercore/profiles";
 
 /** Print usage. */
@@ -36,7 +36,7 @@ Run 'network-devtools <command> --help' for command-specific options.
 }
 
 /** Read a capture file into a single-frame session of the given protocol. */
-function inspectCapture(capturePath: string, protocol: PacketProtocol): ReturnType<typeof createInspectorSession> {
+function inspectCapture(capturePath: string, protocol: PacketProtocol): InspectionSession {
     const bytes = readFileSync(capturePath);
     const session = createInspectorSession();
     session.addFrame({ direction: "sent", protocol, bytes, decoded: null });
