@@ -1,4 +1,4 @@
-# @network/devtools — Implementation Plan
+# @browsercore/devtools — Implementation Plan
 
 Developer tooling for protocol observability. Implement in this order; each step
 is independently useful.
@@ -36,7 +36,7 @@ validity period, and SHA-256 fingerprint.
 
 ## Step 7 — Benchmark CLI
 
-Wire `network-devtools bench` to the `@network/testing` benchmark suite so a
+Wire `network-devtools bench` to the `@browsercore/testing` benchmark suite so a
 developer can run `network-devtools bench tls --iterations 100` from a terminal.
 
 ## Step 8 — Export (JSON/HTML reports)

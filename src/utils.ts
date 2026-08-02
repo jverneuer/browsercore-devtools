@@ -1,5 +1,5 @@
 /**
- * Small shared helpers for @network/devtools.
+ * Small shared helpers for @browsercore/devtools.
  */
 
 /**

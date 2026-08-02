@@ -4,13 +4,13 @@
  * Walks both `BrowserProfile` values structurally and reports every leaf that
  * differs, with a JSON-pointer-ish path and both sides' values. Unknown profile
  * ids surface as {@link ProfileDiffError} (wrapping the underlying
- * {@link UnknownProfileError} from @network/profiles).
+ * {@link UnknownProfileError} from @browsercore/profiles).
  */
 
-import { getProfile, UnknownProfileError } from "@network/profiles";
+import { getProfile, UnknownProfileError } from "@browsercore/profiles";
 import { ProfileDiffError } from "../errors.js";
 import type { ProfileDiff, ProfileDiffEntry } from "../types.js";
-import type { ProfileId } from "@network/profiles";
+import type { ProfileId } from "@browsercore/profiles";
 
 /** Compare two scalar values for equality (handles primitives + Date). */
 function leafEqual(a: unknown, b: unknown): boolean {

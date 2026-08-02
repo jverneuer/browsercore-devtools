@@ -1,4 +1,4 @@
-# @network/devtools
+# @browsercore/devtools
 
 Developer tooling — packet inspector, TLS handshake visualizer, HTTP/2 frame
 viewer, profile diff, certificate inspector, and benchmark CLI. Depends on the
@@ -33,7 +33,7 @@ import {
     diffProfiles,
     inspectCertificate,
     DevtoolsError,
-} from "@network/devtools";
+} from "@browsercore/devtools";
 
 const session = createInspectorSession();
 session.addFrame({
@@ -68,12 +68,12 @@ console.log(diff.differences);
 ## Dependency graph
 
 ```
-@network/devtools
-  └─ @network/fetch  @network/http2  @network/http1  @network/cookies
-        └─ @network/profiles  @network/tls  @network/crypto
-              └─ @network/transport
+@browsercore/devtools
+  └─ @browsercore/fetch  @browsercore/http2  @browsercore/http1  @browsercore/cookies
+        └─ @browsercore/profiles  @browsercore/tls  @browsercore/crypto
+              └─ @browsercore/transport
                     └─ node:net / node:crypto
 ```
 
-`@network/devtools` sits at the very top — it depends on everything and nothing
+`@browsercore/devtools` sits at the very top — it depends on everything and nothing
 depends on it.

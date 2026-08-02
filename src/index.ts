@@ -1,5 +1,5 @@
 /**
- * @network/devtools — public API surface.
+ * @browsercore/devtools — public API surface.
  *
  * Developer tooling: packet inspector, TLS/HTTP2 visualizer, profile diff,
  * certificate inspector, benchmark CLI. Depends on the library but is NOT

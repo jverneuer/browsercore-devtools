@@ -7,7 +7,7 @@
  * {@link CertParseError} on anything it cannot interpret.
  */
 
-import { crypto } from "@network/crypto";
+import { crypto } from "@browsercore/crypto";
 import { CertParseError } from "../errors.js";
 import type { CertInfo } from "../types.js";
 

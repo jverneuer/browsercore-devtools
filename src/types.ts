@@ -1,12 +1,12 @@
 /**
- * Domain types for @network/devtools.
+ * Domain types for @browsercore/devtools.
  *
  * Developer tooling: packet inspector, TLS handshake visualizer, HTTP/2 frame
  * viewer, profile diff, certificate inspector, benchmark CLI. Depends on the
  * library but is NOT required by it.
  */
 
-import type { ProfileId } from "@network/profiles";
+import type { ProfileId } from "@browsercore/profiles";
 
 /** Branded inspector session identifier. */
 export type InspectorSessionId = string & { __brand: "InspectorSessionId" };

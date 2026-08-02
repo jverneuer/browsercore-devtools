@@ -2,12 +2,12 @@
  * Inspection session — capture, decode, and filter protocol frames.
  *
  * `createInspectorSession` owns the in-memory frame log; the decoders lean on
- * the real wire-format parsers from @network/tls and @network/http2 so the
+ * the real wire-format parsers from @browsercore/tls and @browsercore/http2 so the
  * inspector benefits from their validation without duplicating parsing logic.
  */
 
-import { parseRecordHeader, RECORD_HEADER_SIZE } from "@network/tls";
-import { FRAME_HEADER_LENGTH, parseFrameHeader } from "@network/http2";
+import { parseRecordHeader, RECORD_HEADER_SIZE } from "@browsercore/tls";
+import { FRAME_HEADER_LENGTH, parseFrameHeader } from "@browsercore/http2";
 import { Http2DecodeError } from "../errors.js";
 import { TlsDecodeError } from "../errors.js";
 import type {
