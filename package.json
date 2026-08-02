@@ -1,7 +1,7 @@
 {
   "name": "@browsercore/devtools",
-  "version": "0.1.2",
-  "description": "Developer tooling — packet inspector, TLS/HTTP2 visualizer, profile diff, certificate inspector, benchmark CLI.",
+  "version": "0.1.3",
+  "description": "Developer tooling \u2014 packet inspector, TLS/HTTP2 visualizer, profile diff, certificate inspector, benchmark CLI.",
   "repository": {
     "type": "git",
     "url": "https://github.com/jverneuer/browsercore-devtools.git"
@@ -23,7 +23,11 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "LICENSE", "README.md"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
