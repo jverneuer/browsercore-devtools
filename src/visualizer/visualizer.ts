@@ -40,9 +40,9 @@ export function decodeHttp1Message(bytes: Uint8Array): DecodedHttp1Message {
 
 /** Classify the start line as a request line or a status line and pull the code. */
 function parseHttp1StartLine(line: string): { kind: "request" | "response"; statusCode: number | null } {
-    const statusMatch = /^HTTP\/\d\.\d\s+(\d{3})\s/.exec(line);
+    const statusMatch = /^HTTP\/\d\.\d\s+(\d{3})\s/u.exec(line);
     if (statusMatch !== null) {
-        const code = statusMatch[1] !== undefined ? Number(statusMatch[1]) : null;
+        const code = statusMatch[1] === undefined ? null : Number(statusMatch[1]);
         return { kind: "response", statusCode: code };
     }
     return { kind: "request", statusCode: null };
@@ -52,9 +52,13 @@ function parseHttp1StartLine(line: string): { kind: "request" | "response"; stat
 function parseHttp1Headers(lines: readonly string[]): Map<string, string> {
     const headers = new Map<string, string>();
     for (const line of lines) {
-        if (line.length === 0) continue;
+        if (line.length === 0) {
+            continue;
+        }
         const colon = line.indexOf(":");
-        if (colon === -1) continue;
+        if (colon === -1) {
+            continue;
+        }
         const name = line.slice(0, colon).trim().toLowerCase();
         const value = line.slice(colon + 1).trim();
         headers.set(name, value);
@@ -71,7 +75,9 @@ function previewHttp1Body(
     bodyStart: number,
     headers: ReadonlyMap<string, string>,
 ): string {
-    if (bodyStart >= bytes.length) return "";
+    if (bodyStart >= bytes.length) {
+        return "";
+    }
     const transferEncoding = headers.get("transfer-encoding");
     let body = bytes.subarray(bodyStart);
     if (transferEncoding !== undefined && transferEncoding.includes("chunked")) {
@@ -101,14 +107,27 @@ function decodeChunkedBody(bytes: Uint8Array): Uint8Array {
                 break;
             }
         }
-        if (lineEnd === -1) break;
+        if (lineEnd === -1) {
+            break;
+        }
         const size = Number.parseInt(bytesToAscii(bytes.subarray(pos, lineEnd)), 16);
-        if (!Number.isFinite(size)) break;
+        if (!Number.isFinite(size)) {
+            break;
+        }
         const dataStart = lineEnd + 2;
-        if (size === 0) break;
+        if (size === 0) {
+            break;
+        }
         const dataEnd = dataStart + size;
-        if (dataEnd > bytes.length) break;
-        for (let i = dataStart; i < dataEnd; i++) out.push(bytes[i]!);
+        if (dataEnd > bytes.length) {
+            break;
+        }
+        for (let i = dataStart; i < dataEnd; i++) {
+            const byte = bytes[i];
+            if (byte !== undefined) {
+                out.push(byte);
+            }
+        }
         pos = dataEnd + 2; // skip the chunk's trailing CRLF
     }
     return Uint8Array.from(out);
@@ -117,7 +136,12 @@ function decodeChunkedBody(bytes: Uint8Array): Uint8Array {
 /** Lossless ASCII decode (headers are ASCII on the wire). */
 function bytesToAscii(bytes: Uint8Array): string {
     let out = "";
-    for (let i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]!);
+    for (let i = 0; i < bytes.length; i++) {
+        const byte = bytes[i];
+        if (byte !== undefined) {
+            out += String.fromCodePoint(byte);
+        }
+    }
     return out;
 }
 
@@ -128,6 +152,8 @@ function directionGlyph(direction: "sent" | "received"): string {
             return "→";
         case "received":
             return "←";
+        default:
+            return assertNever(direction);
     }
 }
 
@@ -146,9 +172,12 @@ function hexPreview(bytes: Uint8Array, max = 16): string {
     const slice = bytes.subarray(0, Math.min(max, bytes.length));
     let out = "";
     for (let i = 0; i < slice.length; i++) {
-        out += slice[i]!.toString(16).padStart(2, "0");
-        if (i < slice.length - 1) {
-            out += " ";
+        const byte = slice[i];
+        if (byte !== undefined) {
+            out += byte.toString(16).padStart(2, "0");
+            if (i < slice.length - 1) {
+                out += " ";
+            }
         }
     }
     if (bytes.length > max) {
@@ -178,7 +207,7 @@ function renderHttp2Line(frame: PacketFrame, decoded: ReturnType<typeof decodeHt
 function renderHttp1Line(frame: PacketFrame, decoded: DecodedHttp1Message): string {
     const arrow = directionGlyph(frame.direction);
     const time = formatTime(frame.timestamp);
-    const code = decoded.statusCode !== null ? ` (${decoded.statusCode})` : "";
+    const code = decoded.statusCode === null ? "" : ` (${decoded.statusCode})`;
     const headerCount = decoded.headers.size;
     let line = `${time} ${arrow} HTTP/1.1 ${decoded.statusLine}${code} (${headerCount} headers)`;
     if (decoded.bodyPreview.length > 0) {
@@ -214,7 +243,7 @@ function http2FrameTypeName(type: number): string {
 }
 
 /** Render one frame to a string, choosing the protocol-specific presentation. */
-function renderFrame(frame: PacketFrame): string {
+export function renderFrame(frame: PacketFrame): string {
     switch (frame.protocol) {
         case "tls": {
             const decoded = decodeTlsRecord(frame.bytes);
@@ -230,8 +259,9 @@ function renderFrame(frame: PacketFrame): string {
         }
         case "tcp":
             return renderGenericLine(frame);
+        default:
+            return assertNever(frame.protocol);
     }
-    return assertNever(frame.protocol);
 }
 
 /** Section header for a trace. */
@@ -242,9 +272,10 @@ function sectionHeader(title: string, count: number): string {
 /** Render a TLS handshake as a human-readable ASCII trace. */
 export function visualizeTlsHandshake(session: InspectionSession): string {
     const frames = session.filter((f) => f.protocol === "tls");
-    const lines: string[] = [];
-    lines.push(`Session ${session.id}`);
-    lines.push(sectionHeader("TLS", frames.length));
+    const lines: string[] = [
+        `Session ${session.id}`,
+        sectionHeader("TLS", frames.length),
+    ];
     if (frames.length === 0) {
         lines.push("(no TLS frames captured)");
         return lines.join("\n");
@@ -258,9 +289,10 @@ export function visualizeTlsHandshake(session: InspectionSession): string {
 /** Render an HTTP/2 stream's frames as a human-readable ASCII trace. */
 export function visualizeHttp2Stream(session: InspectionSession): string {
     const frames = session.filter((f) => f.protocol === "http2");
-    const lines: string[] = [];
-    lines.push(`Session ${session.id}`);
-    lines.push(sectionHeader("HTTP/2", frames.length));
+    const lines: string[] = [
+        `Session ${session.id}`,
+        sectionHeader("HTTP/2", frames.length),
+    ];
     if (frames.length === 0) {
         lines.push("(no HTTP/2 frames captured)");
         return lines.join("\n");

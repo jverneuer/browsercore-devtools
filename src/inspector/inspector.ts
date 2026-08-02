@@ -8,8 +8,7 @@
 
 import { parseRecordHeader, RECORD_HEADER_SIZE } from "@browsercore/tls";
 import { FRAME_HEADER_LENGTH, parseFrameHeader } from "@browsercore/http2";
-import { Http2DecodeError } from "../errors.js";
-import { TlsDecodeError } from "../errors.js";
+import { Http2DecodeError, TlsDecodeError } from "../errors.js";
 import type {
     DecodedHttp2Frame,
     DecodedTlsRecord,
@@ -61,7 +60,7 @@ export function createInspectorSession(): InspectionSession {
             });
         },
         filter(predicate) {
-            return frames.filter(predicate);
+            return frames.filter((frame) => predicate(frame));
         },
     };
 }

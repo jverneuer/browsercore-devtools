@@ -11,50 +11,57 @@ export function exportToJson(data: unknown): string {
 /** Escape a string for safe embedding in HTML text/attribute context. */
 function escapeHtml(value: string): string {
     return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
 }
 
 /** Render a single value to an HTML fragment (objects → sections, arrays → lists). */
-function renderHtmlValue(value: unknown, label: string | undefined): string {
+function renderHtmlValue(value: unknown, label?: string): string {
+    const labelPrefix = label === undefined ? "" : `${label}: `;
+    const labelHeading = label === undefined ? "" : `<h2>${escapeHtml(label)}</h2>`;
     if (value === null || value === undefined) {
-        return `<div class="row">${label !== undefined ? label + ": " : ""}<span class="null">null</span></div>`;
+        return `<div class="row">${labelPrefix}<span class="null">null</span></div>`;
     }
     if (Array.isArray(value)) {
         const items = value
-            .map((item) => `<li>${renderHtmlValue(item, undefined)}</li>`)
+            .map((item) => `<li>${renderHtmlValue(item)}</li>`)
             .join("");
-        return `<div class="section">${label !== undefined ? "<h2>" + escapeHtml(label) + "</h2>" : ""}<ul>${items}</ul></div>`;
+        return `<div class="section">${labelHeading}<ul>${items}</ul></div>`;
     }
     if (value instanceof Map) {
-        const entries = Array.from(value.entries());
+        const entries = Array.from<[string, unknown]>(value.entries());
         if (entries.length === 0) {
-            return `<div class="section">${label !== undefined ? "<h2>" + escapeHtml(label) + "</h2>" : ""}<span class="null">(empty)</span></div>`;
+            return `<div class="section">${labelHeading}<span class="null">(empty)</span></div>`;
         }
         const rows = entries
             .map(([k, v]) => renderHtmlValue(v, k))
             .join("");
-        return `<div class="section">${label !== undefined ? "<h2>" + escapeHtml(label) + "</h2>" : ""}${rows}</div>`;
+        return `<div class="section">${labelHeading}${rows}</div>`;
     }
     if (typeof value === "object") {
         const record = value as Record<string, unknown>;
         const keys = Object.keys(record);
         if (keys.length === 0) {
-            return `<div class="section">${label !== undefined ? "<h2>" + escapeHtml(label) + "</h2>" : ""}<span class="null">(empty)</span></div>`;
+            return `<div class="section">${labelHeading}<span class="null">(empty)</span></div>`;
         }
         const rows = keys
             .map((key) => renderHtmlValue(record[key], key))
             .join("");
-        return `<div class="section">${label !== undefined ? "<h2>" + escapeHtml(label) + "</h2>" : ""}${rows}</div>`;
+        return `<div class="section">${labelHeading}${rows}</div>`;
     }
     if (typeof value === "string") {
-        return `<div class="row">${label !== undefined ? label + ": " : ""}<span class="str">"${escapeHtml(value)}"</span></div>`;
+        return `<div class="row">${labelPrefix}<span class="str">"${escapeHtml(value)}"</span></div>`;
     }
-    const className = typeof value === "number" ? "num" : "bool";
-    return `<div class="row">${label !== undefined ? label + ": " : ""}<span class="${className}">${String(value)}</span></div>`;
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+        const className = typeof value === "number" ? "num" : "bool";
+        return `<div class="row">${labelPrefix}<span class="${className}">${value}</span></div>`;
+    }
+    // symbol / function / any residual object: serialize explicitly so nothing
+    // falls back to Object's "[object Object]" stringification.
+    return `<div class="row">${labelPrefix}<span class="any">${escapeHtml(JSON.stringify(value))}</span></div>`;
 }
 
 /**
@@ -62,7 +69,7 @@ function renderHtmlValue(value: unknown, label: string | undefined): string {
  * labeled rows; arrays become lists; scalars are rendered inline.
  */
 export function exportToHtml(title: string, data: unknown): string {
-    const body = renderHtmlValue(data, undefined);
+    const body = renderHtmlValue(data);
     return `<!DOCTYPE html>
 <html lang="en">
 <head>

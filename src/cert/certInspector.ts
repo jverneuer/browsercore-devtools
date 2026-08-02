@@ -15,9 +15,12 @@ import type { CertInfo } from "../types.js";
 const ASN1_UNIVERSAL = 0x00;
 const ASN1_CONSTRUCTED = 0x20;
 
-/** Universal tags we care about. */
-const TAG_SEQUENCE = 0x10;
-const TAG_SET = 0x11;
+/**
+ * Universal tags we care about. Stored as the full tag byte (class + constructed
+ * bit + number) so callers can compare directly against the first byte of a TLV.
+ */
+const TAG_SEQUENCE = 0x30; // UNIVERSAL | CONSTRUCTED | 0x10
+const TAG_SET = 0x31; // UNIVERSAL | CONSTRUCTED | 0x11
 const TAG_OID = 0x06;
 const TAG_UTF8STRING = 0x0c;
 const TAG_PRINTABLESTRING = 0x13;
@@ -65,16 +68,29 @@ class DerCursor {
         this.pos = offset;
     }
 
+    /**
+     * Read a single byte, advancing the cursor. Throws {@link CertParseError}
+     * with the given message if the cursor is exhausted.
+     */
+    readByte(message = "unexpected end of DER"): number {
+        if (this.done) {
+            throw new CertParseError(message);
+        }
+        const byte = this.buf[this.pos];
+        if (byte === undefined) {
+            throw new CertParseError(message);
+        }
+        this.pos++;
+        return byte;
+    }
+
     /** Read one ASN.1 TLV: returns tag, constructed flag, and content bytes. */
     readTlv(): { tag: number; constructed: boolean; content: Uint8Array } {
-        if (this.done) {
-            throw new CertParseError("unexpected end of DER");
-        }
-        const startTag = this.buf[this.pos++]!;
+        const startTag = this.readByte();
         const tagClass = startTag & 0xc0;
         const constructed = (startTag & ASN1_CONSTRUCTED) !== 0;
-        const tag = startTag & 0x1f;
-        if (tagClass !== ASN1_UNIVERSAL && tag !== TAG_CONTEXT_SPECIFIC) {
+        const tag = startTag;
+        if (tagClass !== ASN1_UNIVERSAL && tagClass !== TAG_CONTEXT_SPECIFIC) {
             throw new CertParseError(`unsupported tag class: 0x${tagClass.toString(16)}`);
         }
         const len = this.readLength();
@@ -93,10 +109,7 @@ class DerCursor {
 
     /** Read a DER length (short or long form, definite only). */
     private readLength(): number {
-        if (this.done) {
-            throw new CertParseError("truncated DER length");
-        }
-        const first = this.buf[this.pos++]!;
+        const first = this.readByte("truncated DER length");
         if (first < 0x80) {
             return first;
         }
@@ -106,10 +119,7 @@ class DerCursor {
         }
         let len = 0;
         for (let i = 0; i < nbytes; i++) {
-            if (this.done) {
-                throw new CertParseError("truncated DER long-form length");
-            }
-            len = (len << 8) | this.buf[this.pos++]!;
+            len = (len << 8) | this.readByte("truncated DER long-form length");
         }
         return len;
     }
@@ -117,14 +127,17 @@ class DerCursor {
 
 /** Parse an OID byte content to dotted form. */
 function parseOid(content: Uint8Array): string {
-    if (content.length === 0) {
+    const first = content[0];
+    if (first === undefined) {
         throw new CertParseError("empty OID");
     }
-    const first = content[0]!;
     const parts: number[] = [Math.floor(first / 40), first % 40];
     let acc = 0;
     for (let i = 1; i < content.length; i++) {
-        const b = content[i]!;
+        const b = content[i];
+        if (b === undefined) {
+            throw new CertParseError("truncated OID");
+        }
         acc = (acc << 7) | (b & 0x7f);
         if ((b & 0x80) === 0) {
             parts.push(acc);
@@ -157,21 +170,21 @@ function parseTime(tag: number, content: Uint8Array): Date {
     let rest: string;
     if (tag === TAG_UTCTIME) {
         // YYMMDDHHMMSSZ
-        const yy = parseInt(s.slice(0, 2), 10);
+        const yy = Math.trunc(Number(s.slice(0, 2)));
         year = yy >= 50 ? 1900 + yy : 2000 + yy;
         rest = s.slice(2);
     } else if (tag === TAG_GENERALIZEDTIME) {
-        year = parseInt(s.slice(0, 4), 10);
+        year = Math.trunc(Number(s.slice(0, 4)));
         rest = s.slice(4);
     } else {
         throw new CertParseError(`expected time tag, got 0x${tag.toString(16)}`);
     }
-    const month = parseInt(rest.slice(0, 2), 10) - 1;
-    const day = parseInt(rest.slice(2, 4), 10);
-    const hour = parseInt(rest.slice(4, 6), 10);
-    const minute = parseInt(rest.slice(6, 8), 10);
-    const second = rest.length >= 10 ? parseInt(rest.slice(8, 10), 10) : 0;
-    const tz = rest[rest.length - 1];
+    const month = Math.trunc(Number(rest.slice(0, 2))) - 1;
+    const day = Math.trunc(Number(rest.slice(2, 4)));
+    const hour = Math.trunc(Number(rest.slice(4, 6)));
+    const minute = Math.trunc(Number(rest.slice(6, 8)));
+    const second = rest.length >= 10 ? Math.trunc(Number(rest.slice(8, 10))) : 0;
+    const tz = rest.at(-1);
     if (tz === "Z") {
         return new Date(Date.UTC(year, month, day, hour, minute, second));
     }
@@ -211,9 +224,18 @@ function parseDn(content: Uint8Array): string {
 /** Walk the SAN extension and pull out DNS names (other kinds ignored). */
 function parseSan(content: Uint8Array): readonly string[] {
     const cursor = new DerCursor(content);
+    if (cursor.done) {
+        return [];
+    }
+    // The OCTET STRING content is itself a SEQUENCE OF GeneralName.
+    const wrapper = cursor.readTlv();
+    if (wrapper.tag !== TAG_SEQUENCE) {
+        return [];
+    }
     const names: string[] = [];
-    while (!cursor.done) {
-        const tlv = cursor.readTlv();
+    const inner = new DerCursor(wrapper.content);
+    while (!inner.done) {
+        const tlv = inner.readTlv();
         // GeneralName: context-specific tag 0x82 = dNSName.
         if (tlv.tag === 0x82) {
             names.push(new TextDecoder().decode(tlv.content));
@@ -289,8 +311,17 @@ function parseValidity(content: Uint8Array): { notBefore: Date; notAfter: Date }
 /** Walk the extensions SEQUENCE and pull out the SAN OID. */
 function parseTbsExtensions(content: Uint8Array): readonly string[] {
     const cursor = new DerCursor(content);
-    while (!cursor.done) {
-        const ext = cursor.readTlv();
+    if (cursor.done) {
+        return [];
+    }
+    // The [3] content is itself a SEQUENCE OF Extension; unwrap that wrapper.
+    const seqOf = cursor.readTlv();
+    if (seqOf.tag !== TAG_SEQUENCE) {
+        return [];
+    }
+    const extCursor = new DerCursor(seqOf.content);
+    while (!extCursor.done) {
+        const ext = extCursor.readTlv();
         if (ext.tag !== TAG_SEQUENCE) {
             continue;
         }
@@ -327,7 +358,10 @@ function parseTbsExtensions(content: Uint8Array): readonly string[] {
 function toHex(bytes: Uint8Array): string {
     let out = "";
     for (let i = 0; i < bytes.length; i++) {
-        out += bytes[i]!.toString(16).padStart(2, "0");
+        const byte = bytes[i];
+        if (byte !== undefined) {
+            out += byte.toString(16).padStart(2, "0");
+        }
     }
     return out;
 }
@@ -338,7 +372,7 @@ function maybePemToDer(input: Uint8Array): Uint8Array | null {
     if (!text.includes("-----BEGIN CERTIFICATE-----")) {
         return null;
     }
-    const lines = text.split(/\r?\n/);
+    const lines = text.split(/\r?\n/u);
     const body: string[] = [];
     let inBody = false;
     for (const line of lines) {
@@ -357,7 +391,10 @@ function maybePemToDer(input: Uint8Array): Uint8Array | null {
     const binary = atob(b64);
     const out = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
-        out[i] = binary.charCodeAt(i);
+        const code = binary.codePointAt(i);
+        if (code !== undefined) {
+            out[i] = code;
+        }
     }
     return out;
 }

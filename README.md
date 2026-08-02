@@ -1,5 +1,10 @@
 # @browsercore/devtools
 
+
+[![npm version](https://img.shields.io/npm/v/@browsercore/devtools)](https://www.npmjs.com/package/@browsercore/devtools)
+[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jverneuer/browsercore-devtools/main/coverage/badge.json)](https://github.com/jverneuer/browsercore-devtools/blob/main/COVERAGE.md)
+[![lint](https://img.shields.io/github/actions/workflow/status/jverneuer/browsercore-devtools/ci.yml?label=lint)](https://github.com/jverneuer/browsercore-devtools/actions/workflows/ci.yml)
+
 Developer tooling — packet inspector, TLS handshake visualizer, HTTP/2 frame
 viewer, profile diff, certificate inspector, and benchmark CLI. Depends on the
 library but is NOT required by it.

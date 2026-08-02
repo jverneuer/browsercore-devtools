@@ -7,10 +7,9 @@
  * {@link UnknownProfileError} from @browsercore/profiles).
  */
 
-import { getProfile, UnknownProfileError } from "@browsercore/profiles";
+import { getProfile, UnknownProfileError, type ProfileId } from "@browsercore/profiles";
 import { ProfileDiffError } from "../errors.js";
 import type { ProfileDiff, ProfileDiffEntry } from "../types.js";
-import type { ProfileId } from "@browsercore/profiles";
 
 /** Compare two scalar values for equality (handles primitives + Date). */
 function leafEqual(a: unknown, b: unknown): boolean {

@@ -117,7 +117,7 @@ function cmdBench(_argv: ReadonlyArray<string>, write: (line: string) => void): 
 }
 
 /** Dispatch argv to the matching command. */
-export function _dispatch(
+export function dispatch(
     argv: ReadonlyArray<string>,
     write: (line: string) => void = (line) => void line,
 ): void {
