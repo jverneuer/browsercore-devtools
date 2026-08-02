@@ -2,6 +2,14 @@
   "name": "@browsercore/devtools",
   "version": "0.1.0",
   "description": "Developer tooling — packet inspector, TLS/HTTP2 visualizer, profile diff, certificate inspector, benchmark CLI.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jverneuer/browsercore-devtools.git"
+  },
+  "homepage": "https://github.com/jverneuer/browsercore-devtools#readme",
+  "bugs": {
+    "url": "https://github.com/jverneuer/browsercore-devtools/issues"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
