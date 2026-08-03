@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { inspectCertificate } from "../src/cert/certInspector.js";
 import { CertParseError } from "../src/errors.js";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 /** Build a DER buffer from a hex string. */
 function fromHex(hex: string): Uint8Array {
@@ -73,7 +71,59 @@ function makeV1Cert(serial: number, issuerCn: string, subjectCn: string): Uint8A
     return tlv(0x30, new Uint8Array([...tbs, ...sigAlg, ...signature]));
 }
 
+const OID_O = fromHex("550a"); // 2.5.4.10  organizationName
+const OID_SAN = fromHex("551d11"); // 2.5.29.17  subjectAltName
+
+/** A minimal valid v3 DER certificate with a SAN extension. */
+function makeV3CertWithSan(
+    serial: number,
+    issuerOrg: string,
+    subjectCn: string,
+    sanDnsNames: string[],
+): Uint8Array {
+    const serialTlv = tlv(0x02, fromHex(serial.toString(16).padStart(2, "0")));
+    const sigAlg = tlv(0x30, new Uint8Array([...oidTlv(OID_SHA256_RSA), ...tlv(0x05, new Uint8Array())]));
+    const issuer = tlv(
+        0x30,
+        tlv(0x31, tlv(0x30, new Uint8Array([...oidTlv(OID_O), ...utf8Tlv(issuerOrg)]))),
+    );
+    const validity = tlv(
+        0x30,
+        new Uint8Array([
+            ...tlv(0x17, fromHex("323031303130303030305a")),
+            ...tlv(0x17, fromHex("333130313031303030305a")),
+        ]),
+    );
+    const subject = tlv(
+        0x30,
+        tlv(0x31, tlv(0x30, new Uint8Array([...oidTlv(OID_CN), ...utf8Tlv(subjectCn)]))),
+    );
+    const pubKeyInfo = fromHex("300d06092a864886f70d0101010500");
+
+    // SAN extension: SEQUENCE of [2] IMPLICIT dNSName
+    const sanParts: number[] = [];
+    for (const dns of sanDnsNames) {
+        sanParts.push(...tlv(0x82, new TextEncoder().encode(dns)));
+    }
+    const sanValue = tlv(0x30, new Uint8Array(sanParts));
+    const sanExt = tlv(0x30, new Uint8Array([...oidTlv(OID_SAN), ...tlv(0x04, sanValue)]));
+
+    // Extensions wrapper: [3] EXPLICIT SEQUENCE
+    const extensions = tlv(0xa3, tlv(0x30, sanExt));
+
+    // Version v3: [0] EXPLICIT INTEGER 2
+    const version = tlv(0xa0, tlv(0x02, new Uint8Array([0x02])));
+
+    const tbs = tlv(
+        0x30,
+        new Uint8Array([...version, ...serialTlv, ...sigAlg, ...issuer, ...validity, ...subject, ...pubKeyInfo, ...extensions]),
+    );
+    const signature = tlv(0x03, fromHex("00"));
+    return tlv(0x30, new Uint8Array([...tbs, ...sigAlg, ...signature]));
+}
+
 const v1Der = makeV1Cert(0x42, "Root", "Leaf");
+const v3SanDer = makeV3CertWithSan(0x99, "TestOrg", "san.example.com", ["san.example.com", "alt.example.com"]);
 
 const PEM_HEADER = "-----BEGIN CERTIFICATE-----\n";
 const PEM_FOOTER = "\n-----END CERTIFICATE-----";
@@ -104,10 +154,9 @@ describe("inspectCertificate", () => {
         });
 
         it("parses a v3 certificate with a SAN extension and extracts DNS names", () => {
-            const der = new Uint8Array(readFileSync(join("/tmp/certgen/cert-san.der")));
-            const info = inspectCertificate(der);
+            const info = inspectCertificate(v3SanDer);
             expect(info.subject).toContain("CN=san.example.com");
-            expect(info.issuer).toContain("O=TestOrg");
+            expect(info.issuer).toContain("TestOrg");
             expect(info.san).toEqual(["san.example.com", "alt.example.com"]);
         });
 
