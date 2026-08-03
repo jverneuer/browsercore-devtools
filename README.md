@@ -1,6 +1,5 @@
 # @browsercore/devtools
 
-
 [![npm version](https://img.shields.io/npm/v/@browsercore/devtools)](https://www.npmjs.com/package/@browsercore/devtools)
 [![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jverneuer/browsercore-devtools/main/coverage/badge.json)](https://github.com/jverneuer/browsercore-devtools/blob/main/COVERAGE.md)
 [![lint](https://img.shields.io/github/actions/workflow/status/jverneuer/browsercore-devtools/ci.yml?label=lint)](https://github.com/jverneuer/browsercore-devtools/actions/workflows/ci.yml)
@@ -71,6 +70,54 @@ console.log(info.subject, info.fingerprintSha256);
 | `TlsDecodeError` | class | TLS record could not be decoded |
 | `Http2DecodeError` | class | HTTP/2 frame could not be decoded |
 | `ProfileDiffError` | class | Profile diff could not be computed |
+
+## Development
+
+Requires **Node >= 26**. ESM only (`"type": "module"`).
+
+```bash
+npm install        # install dependencies
+npm run typecheck  # tsc --noEmit
+npm run lint       # oxlint --type-aware src/
+npm test           # vitest run
+npm run build      # tsc -p tsconfig.build.json (emit to dist/)
+```
+
+Run a single test file:
+
+```bash
+npx vitest run tests/inspector.test.ts
+```
+
+Run tests by name pattern:
+
+```bash
+npx vitest run -t "decodeTlsRecord"
+```
+
+Generate a coverage report:
+
+```bash
+npx vitest run --coverage
+node scripts/coverage-md.mjs   # writes COVERAGE.md + coverage/badge.json
+```
+
+### Shared config status
+
+This package has **not yet adopted** [`@browsercore/dev`](https://www.npmjs.com/package/@browsercore/dev),
+the shared config package for the `@browsercore/*` family. It currently keeps its own
+copies of the configs that `@browsercore/dev` centralizes in the sibling repos:
+
+| Concern | Current state | `@browsercore/dev` equivalent |
+| --- | --- | --- |
+| TypeScript strict flags | inlined in `tsconfig.json` | `extends @browsercore/dev/tsconfig.base.json` |
+| Vitest config | custom `vitest.config.ts` | `definePackageConfig({ name: "devtools" })` |
+| Oxlint rules | `.oxlintrc.json` | `oxlint.config.ts` importing `@browsercore/dev/oxlint` |
+| Coverage report | `scripts/coverage-md.mjs` | `coverage-md` bin |
+
+Adoption is tracked in the family-wide migration plan (`MIGRATION_REMAINING.md` in the
+parent directory). Once migrated, the custom configs above will be replaced by the
+shared ones and `@browsercore/dev` will be added to `devDependencies`.
 
 ## License
 
