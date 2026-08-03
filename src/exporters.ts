@@ -61,12 +61,14 @@ function renderHtmlValue(value: unknown, label?: string): string {
         const className = typeof value === "number" || typeof value === "bigint" ? "num" : "bool";
         return `<div class="row">${labelPrefix}<span class="${className}">${value}</span></div>`;
     }
-    // symbol / function / any residual object: serialize explicitly so nothing
-    // falls back to Object's "[object Object]" stringification. Use String()
-    // (not JSON.stringify) because JSON.stringify(Symbol|function) returns the
-    // undefined value, which would make escapeHtml throw — String() renders
-    // symbols as "Symbol(s)" and functions as their source string.
-    return `<div class="row">${labelPrefix}<span class="any">${escapeHtml(String(value))}</span></div>`;
+    // symbol / function: serialize explicitly so nothing falls back to Object's
+    // "[object Object]" stringification. JSON.stringify(Symbol|function) returns
+    // the undefined value, which would make escapeHtml throw, so render these
+    // directly: symbols as "Symbol(<desc>)" and functions as a placeholder.
+    if (typeof value === "symbol") {
+        return `<div class="row">${labelPrefix}<span class="any">${escapeHtml(`Symbol(${value.description ?? ""})`)}</span></div>`;
+    }
+    return `<div class="row">${labelPrefix}<span class="any">function</span></div>`;
 }
 
 /**
