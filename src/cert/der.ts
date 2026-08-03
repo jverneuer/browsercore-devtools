@@ -165,8 +165,11 @@ export function parseTime(tag: number, content: Uint8Array): Date {
     const minute = Math.trunc(Number(rest.slice(6, 8)));
     const second = rest.length >= 10 ? Math.trunc(Number(rest.slice(8, 10))) : 0;
     const tz = rest.at(-1);
-    if (tz === "Z") {
-        return new Date(Date.UTC(year, month, day, hour, minute, second));
+    // RFC 5280 §4.1.2.5 mandates that UTCTime/GeneralizedTime in certificates
+    // use the Z (GMT) designator. Reject any other trailing form (offset or
+    // missing) rather than silently dropping the offset.
+    if (tz !== "Z") {
+        throw new CertParseError(`certificate time must use 'Z' timezone, got '${tz}'`);
     }
     return new Date(Date.UTC(year, month, day, hour, minute, second));
 }

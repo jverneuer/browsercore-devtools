@@ -214,17 +214,16 @@ describe("inspectCertificate — error wrapping contract", () => {
         throw new Error("expected to throw");
     });
 
-    it("BUG: a PEM body with invalid base64 throws a raw DOMException, not CertParseError", () => {
-        // maybePemToDer() runs OUTSIDE the try/catch in inspectCertificate, so atob()
-        // failures escape the documented "throws CertParseError on anything it cannot
-        // interpret" contract. This pins the current behavior; a fix should wrap the
-        // atob failure in CertParseError and flip this assertion.
+    it("wraps an invalid-base64 PEM body in CertParseError (not a raw DOMException)", () => {
+        // maybePemToDer() now runs INSIDE the try/catch in inspectCertificate, so the
+        // atob() failure is converted into CertParseError, honoring the documented
+        // "throws CertParseError on anything it cannot interpret" contract.
         const badPem = "-----BEGIN CERTIFICATE-----\n!!!!not-base64!!!!\n-----END CERTIFICATE-----";
-        expect(() => inspectCertificate(new TextEncoder().encode(badPem))).toThrow();
+        expect(() => inspectCertificate(new TextEncoder().encode(badPem))).toThrow(CertParseError);
         try {
             inspectCertificate(new TextEncoder().encode(badPem));
         } catch (err) {
-            expect(err).not.toBeInstanceOf(CertParseError);
+            expect(err).toBeInstanceOf(CertParseError);
             return;
         }
         throw new Error("expected to throw");

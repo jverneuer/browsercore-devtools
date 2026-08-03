@@ -111,12 +111,14 @@ describe("parseTime", () => {
         expect(() => parseTime(0x02, new TextEncoder().encode("260101000000Z"))).toThrow(/expected time tag/);
     });
 
-    it("treats a non-Z (offset) timestamp identically to a Z timestamp", () => {
-        // Documents current behavior: both branches return Date.UTC(...) unchanged,
-        // so a trailing offset is silently dropped. See bug note in the final report.
+    it("rejects a non-Z (offset) timestamp with CertParseError instead of dropping the offset", () => {
+        // RFC 5280 §4.1.2.5 mandates the Z designator for certificate times. A
+        // trailing offset is no longer silently treated as Z; it now throws.
         const z = parseTime(TAG_UTCTIME, new TextEncoder().encode("260101000000Z"));
-        const offset = parseTime(TAG_UTCTIME, new TextEncoder().encode("260101000000+0000"));
-        expect(offset.getTime()).toBe(z.getTime());
+        expect(z.toISOString()).toBe("2026-01-01T00:00:00.000Z");
+        expect(() => parseTime(TAG_UTCTIME, new TextEncoder().encode("260101000000+0000"))).toThrow(
+            CertParseError,
+        );
     });
 });
 

@@ -12,16 +12,17 @@ describe("exportToJson — round-trips and edge values", () => {
         expect(JSON.parse(exportToJson([]))).toEqual([]);
     });
 
-    it("BUG: returns undefined (not a string) for a top-level undefined value", () => {
-        // JSON.stringify(undefined) yields the undefined *value*, so the declared
-        // `: string` return type is violated. Pinned current behavior; a fix should
-        // decide on a canonical representation (e.g. "null" or "undefined").
+    it("returns a string for a top-level undefined value", () => {
+        // JSON.stringify(undefined) yields the undefined *value*, which would
+        // violate the declared `: string` return type; the `?? "null"` guard
+        // canonicalizes it.
         const out = exportToJson(undefined);
-        expect(out).toBeUndefined();
+        expect(typeof out).toBe("string");
+        expect(out).toBe("null");
     });
 
-    it("BUG: returns undefined (not a string) for a top-level symbol", () => {
-        expect(exportToJson(Symbol("s"))).toBeUndefined();
+    it("returns a string for a top-level symbol", () => {
+        expect(typeof exportToJson(Symbol("s"))).toBe("string");
     });
 });
 
@@ -74,17 +75,13 @@ describe("exportToHtml — scalar and composite rendering", () => {
         expect(html).toContain("&amp;");
     });
 
-    it("BUG: renders a bigint with the 'bool' CSS class instead of 'num'", () => {
-        // renderHtmlValue groups number|boolean|bigint but only distinguishes
-        // `typeof === "number"` (-> num) from everything else (-> bool), so a bigint
-        // is mislabeled. Pinned current behavior; a fix should assign bigint its own
-        // class (or fold it into num) and update this assertion.
+    it("renders a bigint with the 'num' CSS class", () => {
+        // renderHtmlValue now folds bigint into the numeric class alongside number.
         const html = exportToHtml("T", { big: 10n });
         expect(html).toContain(">10<");
-        // The bigint row is tagged with the boolean style.
         const row = html.match(/big[^]*?\n/)?.[0] ?? html;
-        expect(row).toContain("bool");
-        expect(row).not.toContain("num");
+        expect(row).toContain("num");
+        expect(row).not.toContain("bool");
     });
 
     it("renders a deep structure without truncation or crashing", () => {
@@ -97,30 +94,28 @@ describe("exportToHtml — scalar and composite rendering", () => {
 });
 
 describe("exportToHtml — values that defeat serialization", () => {
-    // Symbol and function values fall through to the fallback branch, which calls
-    // escapeHtml(JSON.stringify(value)). JSON.stringify of a symbol/function
-    // returns the undefined value, and escapeHtml(undefined) throws a TypeError
-    // because it calls String.prototype.replaceAll on undefined. The fallback was
-    // clearly intended to render these gracefully (its comment says so). Reported
-    // as a source bug; the assertions below pin the current behavior.
+    // Symbol and function values fall through to the fallback branch, which now
+    // calls escapeHtml(String(value)). String() renders symbols as "Symbol(s)"
+    // and functions as their source string, so the fallback renders these
+    // gracefully instead of crashing (it previously passed undefined into
+    // escapeHtml because JSON.stringify(Symbol|function) returns undefined).
 
-    it("BUG: throws a TypeError for a top-level symbol value", () => {
-        // JSON.stringify(Symbol) -> undefined; escapeHtml(undefined) -> TypeError.
-        expect(() => exportToHtml("T", Symbol("s"))).toThrow(TypeError);
+    it("renders a top-level symbol value without throwing", () => {
+        const html = exportToHtml("T", Symbol("s"));
+        expect(html).toContain("Symbol(s)");
+        expect(html).toContain("<!DOCTYPE html>");
     });
 
-    it("BUG: throws a TypeError for an object containing a symbol value", () => {
+    it("renders an object containing a symbol value without throwing", () => {
         // A realistic input shape: a plain object whose property value is a symbol.
-        expect(() => exportToHtml("T", { flag: Symbol("x") })).toThrow(TypeError);
+        const html = exportToHtml("T", { flag: Symbol("x") });
+        expect(html).toContain("Symbol(x)");
     });
 
-    it("BUG: throws a TypeError for a top-level function value", () => {
-        expect(() => exportToHtml("T", () => 1)).toThrow(TypeError);
-    });
-
-    // Desired (post-fix) behavior — skipped until the fallback renders these
-    // gracefully instead of crashing.
-    it.skip("renders a top-level symbol value without throwing (desired)", () => {
-        expect(() => exportToHtml("T", Symbol("s"))).not.toThrow();
+    it("renders a top-level function value without throwing", () => {
+        const html = exportToHtml("T", () => 1);
+        // The function is rendered as its source string and produces a valid row.
+        expect(html).toContain("<!DOCTYPE html>");
+        expect(html).toContain("class=\"any\"");
     });
 });

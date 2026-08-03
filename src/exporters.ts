@@ -5,7 +5,9 @@
 
 /** Stable, human-readable JSON (2-space indent). */
 export function exportToJson(data: unknown): string {
-    return JSON.stringify(data, null, 2);
+    // JSON.stringify(undefined|Symbol) returns the undefined value, which would
+    // violate the declared `: string` return type — coerce to "null" instead.
+    return JSON.stringify(data, null, 2) ?? "null";
 }
 
 /** Escape a string for safe embedding in HTML text/attribute context. */
@@ -56,12 +58,15 @@ function renderHtmlValue(value: unknown, label?: string): string {
         return `<div class="row">${labelPrefix}<span class="str">"${escapeHtml(value)}"</span></div>`;
     }
     if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
-        const className = typeof value === "number" ? "num" : "bool";
+        const className = typeof value === "number" || typeof value === "bigint" ? "num" : "bool";
         return `<div class="row">${labelPrefix}<span class="${className}">${value}</span></div>`;
     }
     // symbol / function / any residual object: serialize explicitly so nothing
-    // falls back to Object's "[object Object]" stringification.
-    return `<div class="row">${labelPrefix}<span class="any">${escapeHtml(JSON.stringify(value))}</span></div>`;
+    // falls back to Object's "[object Object]" stringification. Use String()
+    // (not JSON.stringify) because JSON.stringify(Symbol|function) returns the
+    // undefined value, which would make escapeHtml throw — String() renders
+    // symbols as "Symbol(s)" and functions as their source string.
+    return `<div class="row">${labelPrefix}<span class="any">${escapeHtml(String(value))}</span></div>`;
 }
 
 /**

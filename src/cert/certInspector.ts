@@ -253,11 +253,14 @@ function fingerprintHex(der: Uint8Array): string {
 
 /** Parse a PEM or DER certificate and return a summary. */
 export function inspectCertificate(pemOrDer: Uint8Array): CertInfo {
-    const der = maybePemToDer(pemOrDer) ?? pemOrDer;
-    if (der.length === 0) {
-        throw new CertParseError("empty certificate input");
-    }
     try {
+        // maybePemToDer() runs atob() internally, which throws a raw DOMException
+        // on invalid base64 — keep it inside the try so the catch can convert
+        // that into the documented CertParseError contract.
+        const der = maybePemToDer(pemOrDer) ?? pemOrDer;
+        if (der.length === 0) {
+            throw new CertParseError("empty certificate input");
+        }
         const cursor = new DerCursor(der);
         const cert = cursor.readTlv();
         if (cert.tag !== TAG_SEQUENCE) {
