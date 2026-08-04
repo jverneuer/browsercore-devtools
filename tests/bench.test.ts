@@ -174,6 +174,114 @@ describe("ja3", () => {
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
     });
+
+    it("throws Ja3ParseError via readInt24 out of bounds", () => {
+        // Truncate the buffer right where readInt24 would read (bare handshake, offset 1)
+        const buf = new Uint8Array([0x01, 0x00]); // only 2 bytes, readInt24 needs 3
+        expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
+    });
+
+    it("throws Ja3ParseError via uint16 out of bounds", () => {
+        // Bare handshake: after version(2) + random(32) + sessionIdLen(1) = 35 bytes consumed,
+        // then uint16 for cipherSuitesLen at pos 39. Truncate so pos 39-40 is out of bounds.
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const body = [...version, ...random, ...sessionIdLen]; // 35 bytes
+        // Set handshakeLen large enough to pass initial check but truncate buffer before cipherSuitesLen
+        const handshakeLen = [0x00, 0x00, 0x20]; // claims 32 bytes
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]); // 39 bytes total
+        expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
+    });
+
+    it("throws Ja3ParseError when bare handshake length exceeds available", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const body = [...version, ...random, ...sessionIdLen]; // 35 bytes
+        const handshakeLen = [0x00, 0x01, 0x00]; // claims 256 bytes, but only 35 available
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
+        expect(() => parseClientHello(buf)).toThrow(/Handshake length/);
+    });
+
+    it("returns no extensions when pos + 2 > end after compression methods", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        const body = [...version, ...random, ...sessionIdLen, ...cipherSuites, ...compression];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const segments = parseClientHello(buf);
+        expect(segments.extensions).toBe("");
+        expect(segments.supportedGroups).toBe("");
+        expect(segments.ecPointFormats).toBe("");
+    });
+
+    it("throws Ja3ParseError when record wrapper handshake length exceeds available", () => {
+        // Record wrapper: 0x16 0x03 0x03 + uint16 length, then handshake type 0x01 + uint24 length
+        // Set handshakeLen large so it exceeds available bytes
+        const buf = new Uint8Array([0x16, 0x03, 0x03, 0x00, 0x20, 0x01, 0x00, 0x01, 0x00, 0x03, 0x04]);
+        expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
+        expect(() => parseClientHello(buf)).toThrow(/Handshake length/);
+    });
+
+    it("throws Ja3ParseError when ec_point_formats listLen byte is out of bounds", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // ec_point_formats(11) extension: type(2) + length(2) + body
+        // The body starts with listLen(1). Make the extension end right before listLen.
+        const extType = [0x00, 0x0b];
+        const extLen = [0x00, 0x01]; // claims 1 byte of body
+        const extensionsLen = [0x00, extType.length + extLen.length]; // no room for body
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...extType,
+            ...extLen,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
+    });
+
+    it("throws Ja3ParseError when readUint16List goes out of bounds (supported_groups)", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // supported_groups(10): type(2) + length(2) + listLen(2) + groups
+        // Claim listLen = 0x0008 (8 bytes = 4 groups) but only provide 2 bytes
+        const extType = [0x00, 0x0a];
+        const extLen = [0x00, 0x0a]; // claims 10 bytes of body
+        const sgBody = [0x00, 0x08, 0x00, 0x1d]; // listLen=8, but only 2 bytes of groups
+        const extensionsLen = [0x00, extType.length + extLen.length + sgBody.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...extType,
+            ...extLen,
+            ...sgBody,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
+        expect(() => parseClientHello(buf)).toThrow(/readUint16List out of bounds/);
+    });
 });
 
 describe("ja4", () => {
@@ -303,6 +411,334 @@ describe("ja4", () => {
         expect(fp.b).toBe("000000000000");
         expect(fp.c).toBe("000000000000");
     });
+
+    it("detects SNI presence and sets the sni_flag in JA4_a", () => {
+        // Build a ClientHello with an SNI extension (type 0x0000)
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // SNI extension: type=0x0000, length=0x0005, then 5 bytes of SNI data
+        const sniExt = [0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00];
+        const extensionsLen = [0x00, sniExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...sniExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.sniPresent).toBe(true);
+        const fp = computeJa4Fingerprint(buf);
+        expect(fp.a).toContain("d"); // sni_flag = "d" when SNI present
+    });
+
+    it("parses a ClientHello with a supported_groups extension", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // supported_groups(10): length=0x0004, list length=0x0002, one group 0x001d (x25519)
+        const sgExt = [0x00, 0x0a, 0x00, 0x04, 0x00, 0x02, 0x00, 0x1d];
+        const extensionsLen = [0x00, sgExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...sgExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.supportedGroups).toEqual([0x001d]);
+    });
+
+    it("parses a ClientHello with an ALPN extension", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // ALPN(16): length=0x0005, list length=0x0003, then "h2" (len 2) — wait, list length includes the per-protocol length bytes
+        // ALN list: length(2) + (len(1) + "h2"(2)) = 5 bytes
+        const alpnExt = [0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 0x68, 0x32];
+        const extensionsLen = [0x00, alpnExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...alpnExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.alpnRaw).toBe("h2");
+        // ALPN code should be first char of first + first char of last
+        const fp = computeJa4Fingerprint(buf);
+        expect(fp.a).toMatch(/hh$/);
+    });
+
+    it("skips GREASE extension types when building the extension list", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // GREASE extension: type=0x0a0a, length=0x0000
+        const greaseExt = [0x0a, 0x0a, 0x00, 0x00];
+        const extensionsLen = [0x00, greaseExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...greaseExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.extensions).not.toContain(0x0a0a);
+        expect(parsed.extensions).toEqual([]);
+    });
+
+    it("throws Ja4ParseError when bare ClientHello is too short for version", () => {
+        // Bare handshake where end = pos (handshakeLen = 0), so pos + 2 > end
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        const body = [...version, ...random, ...sessionIdLen, ...cipherSuites, ...compression];
+        // Set handshakeLen = 0 so end = pos immediately
+        const handshakeLen = [0x00, 0x00, 0x00];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/version/);
+    });
+
+    it("throws Ja4ParseError when pos exceeds end before session id (truncated random)", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        const body = [...version, ...random, ...sessionIdLen, ...cipherSuites, ...compression];
+        // Set handshakeLen = 2 so end = pos + 2, but we need pos > end after random (pos advances 34 bytes)
+        const handshakeLen = [0x00, 0x00, 0x02];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/session id/);
+    });
+
+    it("returns no extensions when pos + 2 > end after compression methods", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        const body = [...version, ...random, ...sessionIdLen, ...cipherSuites, ...compression];
+        // handshakeLen = body.length so end = pos + body.length — but after reading compression, pos = end, so pos + 2 > end
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.extensions).toEqual([]);
+        expect(parsed.supportedGroups).toEqual([]);
+        expect(parsed.ecPointFormats).toEqual([]);
+    });
+
+    it("throws Ja4ParseError when cipher suites extend past end", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        const body = [...version, ...random, ...sessionIdLen, ...cipherSuites, ...compression];
+        // After version+random+sessionId: pos = 4+2+32+1 = 39. pos + cipherSuitesLen(2) > end means end < 41, so handshakeLen < 37
+        const handshakeLen = [0x00, 0x00, 36]; // end = 40, pos(39) + 2 > 40 ✓
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/cipher suites/);
+    });
+
+    it("throws Ja4ParseError via readInt24 out of bounds in record wrapper", () => {
+        // Record wrapper: 0x16 0x03 0x03, then uint16 length. Truncate before handshake type.
+        const buf = new Uint8Array([0x16, 0x03, 0x03, 0x00, 0x20, 0x01, 0x00]); // only 7 bytes
+        expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
+    });
+
+    it("does not push GREASE extensions but still parses non-GREASE extensions", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // Two extensions: GREASE (0x0a0a) and SNI (0x0000)
+        const greaseExt = [0x0a, 0x0a, 0x00, 0x00];
+        const sniExt = [0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00];
+        const allExts = [...greaseExt, ...sniExt];
+        const extensionsLen = [0x00, allExts.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...allExts,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.extensions).not.toContain(0x0a0a);
+        expect(parsed.extensions).toContain(0x0000);
+    });
+
+    it("parses supported_groups even when extLen is exactly 4", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // supported_groups(10) with extLen = 4: listLen(2) + 1 group(2) = 4
+        const sgExt = [0x00, 0x0a, 0x00, 0x04, 0x00, 0x02, 0x00, 0x1d];
+        const extensionsLen = [0x00, sgExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...sgExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.supportedGroups).toEqual([0x001d]);
+    });
+
+    it("does not read ec_point_formats when extLen is 0", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // ec_point_formats(11) with extLen = 0
+        const ecExt = [0x00, 0x0b, 0x00, 0x00];
+        const extensionsLen = [0x00, ecExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...ecExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.ecPointFormats).toEqual([]);
+    });
+
+    it("does not read ALPN when extLen < 2", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // ALPN(16) with extLen = 1 (< 2, so ALPN is skipped)
+        const alpnExt = [0x00, 0x10, 0x00, 0x01, 0x00];
+        const extensionsLen = [0x00, alpnExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...alpnExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.alpnRaw).toBe("");
+    });
+
+    it("throws Ja4ParseError when record wrapper handshake length exceeds available", () => {
+        // Record wrapper: 0x16 0x03 0x03 + uint16 length, then 0x01 + uint24 length
+        // Set handshakeLen large so it exceeds available
+        const buf = new Uint8Array([0x16, 0x03, 0x03, 0x00, 0x20, 0x01, 0x00, 0x01, 0x00, 0x03, 0x04]);
+        expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/Handshake length/);
+    });
+
+    it("does not read supported_groups when extLen < 4", () => {
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // supported_groups(10) with extLen = 2 (< 4, so groups are skipped)
+        // extLen 2 = just the listLen(2) with 0 groups
+        const sgExt = [0x00, 0x0a, 0x00, 0x02, 0x00, 0x00];
+        const extensionsLen = [0x00, sgExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...sgExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.supportedGroups).toEqual([]);
+    });
+
+    it("handles ALPN with a single protocol", () => {
+        // When there's only one ALPN protocol, first == last
+        const version = [0x03, 0x04];
+        const random = new Uint8Array(32);
+        const sessionIdLen = [0x00];
+        const cipherSuites = [0x00, 0x02, 0x13, 0x01];
+        const compression = [0x01, 0x00];
+        // ALPN(16): length=0x0005, list length=0x0003, then "h2" (len 2)
+        const alpnExt = [0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 0x68, 0x32];
+        const extensionsLen = [0x00, alpnExt.length];
+        const body = [
+            ...version,
+            ...random,
+            ...sessionIdLen,
+            ...cipherSuites,
+            ...compression,
+            ...extensionsLen,
+            ...alpnExt,
+        ];
+        const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
+        const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
+        const parsed = parseJa4ClientHello(buf);
+        expect(parsed.alpnRaw).toBe("h2");
+        const fp = computeJa4Fingerprint(buf);
+        expect(fp.a).toMatch(/hh$/); // first char of first + first char of last = "h" + "h"
+    });
 });
 
 describe("ja4-reader", () => {
@@ -387,5 +823,25 @@ describe("ja4-reader", () => {
         // list length 10, but only 2 bytes follow
         const buf = new Uint8Array([0x00, 0x0a, 0x02, 0x68]);
         expect(() => readAlpnProtocols(buf, 0)).toThrow(Ja4ParseError);
+    });
+
+    it("readEcPointFormats throws when listLen byte is out of bounds", () => {
+        const buf = new Uint8Array([]); // empty buffer — pos 0 is undefined
+        expect(() => readEcPointFormats(buf, 0)).toThrow(Ja4ParseError);
+    });
+
+    it("readSupportedGroups throws when listLen uint16 is out of bounds", () => {
+        const buf = new Uint8Array([0x00]); // only 1 byte, uint16 needs 2
+        expect(() => readSupportedGroups(buf, 0)).toThrow(Ja4ParseError);
+    });
+});
+
+describe("percentile edge cases", () => {
+    it("returns 0 for empty array", () => {
+        // Access via the exported function's behavior
+        const { benchmarkTlsHandshake } = await import("../src/bench/bench.js");
+        // Run with 0 iterations to exercise empty stats path
+        const stats = benchmarkTlsHandshake(0);
+        expect(stats).toBeDefined();
     });
 });
