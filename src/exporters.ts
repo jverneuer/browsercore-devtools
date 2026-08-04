@@ -66,6 +66,7 @@ function renderHtmlValue(value: unknown, label?: string): string {
     // (not JSON.stringify) because JSON.stringify(Symbol|function) returns the
     // undefined value, which would make escapeHtml throw — String() renders
     // symbols as "Symbol(s)" and functions as their source string.
+    // oxlint-disable-next-line no-base-to-string — String() is intentional: JSON.stringify returns undefined for Symbol/function
     return `<div class="row">${labelPrefix}<span class="any">${escapeHtml(String(value))}</span></div>`;
 }
 
