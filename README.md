@@ -40,6 +40,22 @@ const info = inspectCertificate(pemBytes);
 console.log(info.subject, info.fingerprintSha256);
 ```
 
+## CLI
+
+The `network-devtools` binary exposes the same tooling from a terminal:
+
+```bash
+network-devtools tls capture.bin         # visualize a TLS handshake
+network-devtools http2 capture.bin       # visualize an HTTP/2 session
+network-devtools diff chrome-140 firefox-128  # diff two profiles
+network-devtools cert cert.pem            # inspect an X.509 certificate
+network-devtools bench tls --iterations 100   # benchmark TLS fingerprinting
+network-devtools bench http2 --iterations 100  # benchmark HTTP/2 comparison
+```
+
+`bench` runs protocol-parsing micro-benchmarks against the golden browser
+captures in `@browsercore/testing` and reports avg/p50/p95/p99 latency.
+
 ## Public API
 
 | Export | Kind | Purpose |

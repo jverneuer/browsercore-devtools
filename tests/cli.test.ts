@@ -131,8 +131,30 @@ describe("_dispatch", () => {
         expect(lines[0]).toBe("cert: missing <cert> path");
     });
 
-    it("bench prints a stub message", () => {
+    it("bench requires a target", () => {
         const lines = run(["node", "network-devtools", "bench"]);
-        expect(lines[0]).toContain("stub");
+        expect(lines[0]).toContain("requires <tls|http2>");
+    });
+
+    it("bench tls reports latency percentiles", () => {
+        const lines = run(["node", "network-devtools", "bench", "tls", "--iterations", "10"]);
+        const out = lines.join("\n");
+        expect(out).toContain("tls-client-hello-fingerprint");
+        expect(out).toContain("10 iterations");
+        expect(out).toContain("p99:");
+    });
+
+    it("bench http2 reports latency percentiles", () => {
+        const lines = run(["node", "network-devtools", "bench", "http2", "--iterations", "5"]);
+        const out = lines.join("\n");
+        expect(out).toContain("http2-settings-comparison");
+        expect(out).toContain("5 iterations");
+        expect(out).toContain("p95:");
+    });
+
+    it("bench rejects a malformed --iterations value", () => {
+        expect(() => run(["node", "network-devtools", "bench", "tls", "--iterations", "abc"])).toThrow(
+            /positive integer/,
+        );
     });
 });
