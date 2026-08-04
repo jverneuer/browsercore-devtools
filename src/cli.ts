@@ -11,6 +11,8 @@ import { createInspectorSession } from "./inspector/inspector.js";
 import { visualizeTlsHandshake, visualizeHttp2Stream } from "./visualizer/visualizer.js";
 import { diffProfiles } from "./diff/profileDiff.js";
 import { inspectCertificate } from "./cert/certInspector.js";
+import { benchmarkTlsHandshake, benchmarkHttp2Request } from "@browsercore/testing";
+import type { BenchStats } from "@browsercore/testing";
 import type { InspectionSession, PacketProtocol } from "./types.js";
 import type { ProfileId } from "@browsercore/profiles";
 
@@ -28,7 +30,12 @@ Commands:
   http2      Visualize an HTTP/2 session
   diff       Diff two browser profiles
   cert       Inspect an X.509 certificate
-  bench      Run a benchmark
+  bench      Run protocol benchmarks
+
+Bench flags:
+  --tls              Run only the TLS handshake fingerprint benchmark
+  --http2            Run only the HTTP/2 comparison + compression benchmark
+  -n, --iterations N  Repetitions per benchmark (default ${DEFAULT_ITERATIONS})
 
 Run 'network-devtools <command> --help' for command-specific options.
 `,
@@ -111,9 +118,77 @@ function cmdCert(argv: ReadonlyArray<string>, write: (line: string) => void): vo
     write(`SHA-256: ${info.fingerprintSha256}`);
 }
 
-/** `bench` — benchmark stub (not yet wired to @browsercore/testing). */
-function cmdBench(_argv: ReadonlyArray<string>, write: (line: string) => void): void {
-    write("bench: benchmark not yet wired to @browsercore/testing (stub)");
+/** Default iteration count for a bench run. */
+const DEFAULT_ITERATIONS = 100;
+
+/** Parse bench flags from argv[3..]. Returns the iteration count and which suites to run. */
+function parseBenchFlags(argv: ReadonlyArray<string>): {
+    iterations: number;
+    runTls: boolean;
+    runHttp2: boolean;
+} {
+    let iterations = DEFAULT_ITERATIONS;
+    let tls = false;
+    let http2 = false;
+    let pick = false;
+
+    for (let i = 3; i < argv.length; i++) {
+        const arg = argv[i];
+        if (arg === "--tls" || arg === "--http2") {
+            pick = true;
+            if (arg === "--tls") {
+                tls = true;
+            } else {
+                http2 = true;
+            }
+        } else if (arg === "--iterations" || arg === "-n") {
+            const next = argv[i + 1];
+            if (next === undefined) {
+                throw new Error(`bench: '${arg}' requires a number`);
+            }
+            const n = Number(next);
+            if (!Number.isFinite(n) || n < 1) {
+                throw new Error(`bench: invalid iteration count '${next}'`);
+            }
+            iterations = Math.floor(n);
+            i++;
+        } else {
+            throw new Error(`bench: unknown flag '${arg}' — see 'network-devtools bench --help'`);
+        }
+    }
+
+    return { iterations, runTls: tls || !pick, runHttp2: http2 || !pick };
+}
+
+/** Format a single benchmark result block. */
+function formatBenchResult(label: string, stats: BenchStats, write: (line: string) => void): void {
+    write(`${label} (${stats.iterations} iterations):`);
+    write(`  avg: ${stats.avgMs.toFixed(4)} ms`);
+    write(`  p50: ${stats.p50.toFixed(4)} ms`);
+    write(`  p95: ${stats.p95.toFixed(4)} ms`);
+    write(`  p99: ${stats.p99.toFixed(4)} ms`);
+}
+
+/** `bench` — run protocol benchmarks via @browsercore/testing. */
+function cmdBench(argv: ReadonlyArray<string>, write: (line: string) => void): void {
+    const { iterations, runTls, runHttp2 } = parseBenchFlags(argv);
+    let first = true;
+    if (runTls) {
+        if (!first) {
+            write("");
+        }
+        first = false;
+        write("TLS ClientHello fingerprint:");
+        formatBenchResult("  ja3+ja4", benchmarkTlsHandshake(iterations), write);
+    }
+    if (runHttp2) {
+        if (!first) {
+            write("");
+        }
+        first = false;
+        write("HTTP/2 golden comparison + gzip round-trip:");
+        formatBenchResult("  compare+compress", benchmarkHttp2Request(iterations), write);
+    }
 }
 
 /** Dispatch argv to the matching command. */
