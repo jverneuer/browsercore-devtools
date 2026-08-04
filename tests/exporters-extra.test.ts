@@ -118,4 +118,12 @@ describe("exportToHtml — values that defeat serialization", () => {
         expect(html).toContain("<!DOCTYPE html>");
         expect(html).toContain("class=\"any\"");
     });
+
+    it("renders a symbol with no description as Symbol()", () => {
+        // Symbol() (no descriptor) has description === undefined, so the
+        // `value.description ?? ""` fallback renders the empty parens.
+        const html = exportToHtml("T", Symbol());
+        expect(html).toContain("Symbol()");
+        expect(html).toContain("class=\"any\"");
+    });
 });

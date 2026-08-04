@@ -119,4 +119,13 @@ describe("decodeHttp1Message — start-line & header edge cases", () => {
         expect(msg.kind).toBe("request");
         expect(msg.statusCode).toBeNull();
     });
+
+    it("previews the body using neither Content-Length nor Transfer-Encoding", () => {
+        // With no Content-Length and no Transfer-Encoding, previewHttp1Body takes the
+        // else-of-else path: it surfaces a raw slice of the remaining bytes (capped).
+        const text = "HTTP/1.1 200 OK\r\n\r\nBODY-WITHOUT-LENGTH";
+        const msg = decodeHttp1Message(ENC.encode(text));
+        expect(msg.statusCode).toBe(200);
+        expect(msg.bodyPreview).toBe("BODY-WITHOUT-LENGTH");
+    });
 });

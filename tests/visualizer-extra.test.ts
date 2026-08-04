@@ -122,3 +122,19 @@ describe("visualize* — trace structure", () => {
         expect(out).toContain("── TLS (0 frames) ──");
     });
 });
+
+describe("renderFrame — exhaustiveness guards (assertNever)", () => {
+    it("throws via assertNever for an unhandled protocol", () => {
+        // The switch in renderFrame is exhaustive over PacketProtocol; a value
+        // outside the union must fall through to the default → assertNever.
+        const bad = { timestamp: 0, direction: "sent", protocol: "quic", bytes: new Uint8Array(), decoded: null };
+        expect(() => renderFrame(bad as PacketFrame)).toThrow(/Unexpected value/);
+    });
+
+    it("throws via assertNever for an unhandled direction", () => {
+        // directionGlyph is exhaustive over PacketDirection; an invalid direction
+        // (reached via the generic TCP renderer) must hit its default → assertNever.
+        const bad = { timestamp: 0, direction: "sideways", protocol: "tcp", bytes: new Uint8Array([0x01]), decoded: null };
+        expect(() => renderFrame(bad as PacketFrame)).toThrow(/Unexpected value/);
+    });
+});

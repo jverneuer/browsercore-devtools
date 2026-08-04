@@ -7,6 +7,7 @@ import {
     extension,
     extensionsWrapper,
     dnsName,
+    makeMinimalCert,
     octetTlv,
     oidTlv,
     rdn,
@@ -227,5 +228,17 @@ describe("inspectCertificate — error wrapping contract", () => {
             return;
         }
         throw new Error("expected to throw");
+    });
+
+    it("skips leading junk lines before the PEM BEGIN marker", () => {
+        // maybePemToDer() iterates lines; anything before "-----BEGIN " takes the
+        // if (inBody) else path (ignored). A PEM with leading comments must still
+        // parse — only the base64 body between the markers is decoded.
+        const pem = makeMinimalCert();
+        const withJunk = ["# a leading comment", "not-base64-junk", ""].join("\n") + "\n" + pem;
+        const info = inspectCertificate(new TextEncoder().encode(withJunk));
+        expect(info.subject).toContain("CN=");
+        expect(info.issuer).toContain("Test");
+        expect(info.fingerprintSha256).toMatch(/^[0-9a-f]{2}(:[0-9a-f]{2}){31}$/);
     });
 });
