@@ -838,9 +838,7 @@ describe("ja4-reader", () => {
 
 describe("percentile edge cases", () => {
     it("returns 0 for empty array", () => {
-        // Access via the exported function's behavior
-        const { benchmarkTlsHandshake } = await import("../src/bench/bench.js");
-        // Run with 0 iterations to exercise empty stats path
+        const { benchmarkTlsHandshake } = require("../src/bench/bench.js");
         const stats = benchmarkTlsHandshake(0);
         expect(stats).toBeDefined();
     });
