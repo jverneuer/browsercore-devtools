@@ -1,6 +1,6 @@
 {
     "name": "@browsercore/devtools",
-    "version": "0.1.9",
+    "version": "0.2.0",
     "description": "Developer tooling — packet inspector, TLS/HTTP2 visualizer, profile diff, certificate inspector, benchmark CLI.",
     "repository": {
         "type": "git",
