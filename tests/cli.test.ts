@@ -131,8 +131,48 @@ describe("_dispatch", () => {
         expect(lines[0]).toBe("cert: missing <cert> path");
     });
 
-    it("bench prints a stub message", () => {
-        const lines = run(["node", "network-devtools", "bench"]);
-        expect(lines[0]).toContain("stub");
+    it("bench runs both suites by default and prints latency stats", () => {
+        const lines = run(["node", "network-devtools", "bench", "-n", "5"]);
+        const out = lines.join("\n");
+        expect(out).toContain("TLS ClientHello fingerprint:");
+        expect(out).toContain("ja3+ja4");
+        expect(out).toContain("HTTP/2 golden comparison + gzip round-trip:");
+        expect(out).toContain("compare+compress");
+        expect(out).toContain("avg:");
+        expect(out).toContain("p50:");
+        expect(out).toContain("p95:");
+        expect(out).toContain("p99:");
+    });
+
+    it("bench --tls runs only the TLS suite", () => {
+        const lines = run(["node", "network-devtools", "bench", "--tls", "-n", "3"]);
+        const out = lines.join("\n");
+        expect(out).toContain("TLS ClientHello fingerprint:");
+        expect(out).not.toContain("HTTP/2");
+    });
+
+    it("bench --http2 runs only the HTTP/2 suite", () => {
+        const lines = run(["node", "network-devtools", "bench", "--http2", "-n", "3"]);
+        const out = lines.join("\n");
+        expect(out).toContain("HTTP/2 golden comparison + gzip round-trip:");
+        expect(out).not.toContain("TLS ClientHello");
+    });
+
+    it("bench reports the iteration count back", () => {
+        const lines = run(["node", "network-devtools", "bench", "--iterations", "7"]);
+        const out = lines.join("\n");
+        expect(out).toContain("7 iterations");
+    });
+
+    it("bench throws on an unknown flag", () => {
+        expect(() => run(["node", "network-devtools", "bench", "--bogus"])).toThrow(
+            /unknown flag '--bogus'/,
+        );
+    });
+
+    it("bench throws when --iterations is missing its value", () => {
+        expect(() => run(["node", "network-devtools", "bench", "--iterations"])).toThrow(
+            /requires a number/,
+        );
     });
 });

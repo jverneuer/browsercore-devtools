@@ -34,7 +34,7 @@
     },
     "scripts": {
         "clean": "rm -rf dist",
-        "build": "tsc -p tsconfig.build.json",
+        "build": "tsc -p tsconfig.build.json && node scripts/copy-captures.mjs",
         "prepublishOnly": "npm run clean && npm run build",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "test": "vitest run",
