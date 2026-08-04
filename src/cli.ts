@@ -11,8 +11,7 @@ import { createInspectorSession } from "./inspector/inspector.js";
 import { visualizeTlsHandshake, visualizeHttp2Stream } from "./visualizer/visualizer.js";
 import { diffProfiles } from "./diff/profileDiff.js";
 import { inspectCertificate } from "./cert/certInspector.js";
-import { benchmarkTlsHandshake, benchmarkHttp2Request } from "@browsercore/testing";
-import type { BenchStats } from "@browsercore/testing";
+import { benchmarkTlsHandshake, benchmarkHttp2Request, type BenchStats } from "./bench/index.js";
 import type { InspectionSession, PacketProtocol } from "./types.js";
 import type { ProfileId } from "@browsercore/profiles";
 
@@ -169,7 +168,7 @@ function formatBenchResult(label: string, stats: BenchStats, write: (line: strin
     write(`  p99: ${stats.p99.toFixed(4)} ms`);
 }
 
-/** `bench` — run protocol benchmarks via @browsercore/testing. */
+/** `bench` — run protocol benchmarks (vendored from @browsercore/testing). */
 function cmdBench(argv: ReadonlyArray<string>, write: (line: string) => void): void {
     const { iterations, runTls, runHttp2 } = parseBenchFlags(argv);
     let first = true;
