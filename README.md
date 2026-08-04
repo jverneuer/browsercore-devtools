@@ -2,7 +2,7 @@
 
 
 [![npm version](https://img.shields.io/npm/v/@browsercore/devtools)](https://www.npmjs.com/package/@browsercore/devtools)
-[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jverneuer/browsercore-devtools/main/coverage/badge.json)](https://github.com/jverneuer/browsercore-devtools/blob/main/COVERAGE.md)
+[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jverneuer/browsercore-devtools/coverage/coverage/badge.json)](https://github.com/jverneuer/browsercore-devtools/blob/main/COVERAGE.md)
 [![lint](https://img.shields.io/github/actions/workflow/status/jverneuer/browsercore-devtools/ci.yml?label=lint)](https://github.com/jverneuer/browsercore-devtools/actions/workflows/ci.yml)
 
 Developer tooling for the browsercore stack: packet inspector, TLS/HTTP visualizers,
