@@ -837,9 +837,10 @@ describe("ja4-reader", () => {
 });
 
 describe("percentile edge cases", () => {
-    it("returns 0 for empty array", () => {
-        const { benchmarkTlsHandshake } = require("../src/bench/bench.js");
+    it("handles 0 iterations", async () => {
+        const { benchmarkTlsHandshake } = await import("../src/bench/bench.js");
         const stats = benchmarkTlsHandshake(0);
         expect(stats).toBeDefined();
+        expect(stats.iterations).toBe(0);
     });
 });
