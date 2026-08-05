@@ -12,6 +12,7 @@
     },
     "license": "MIT",
     "type": "module",
+    "sideEffects": false,
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "bin": {
@@ -25,6 +26,7 @@
     },
     "files": [
         "dist",
+        "bin",
         "LICENSE",
         "README.md"
     ],
@@ -38,7 +40,8 @@
         "prepublishOnly": "npm run clean && npm run build",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "test": "vitest run",
-        "lint": "oxlint --type-aware src/"
+        "lint": "oxlint --type-aware src/",
+        "coverage-md": "./bin/coverage-md.mjs"
     },
     "devDependencies": {
         "@browsercore/dev": "latest",
