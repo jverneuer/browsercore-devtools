@@ -5,3 +5,5 @@ coverage/
 .DS_Store
 COVERAGE.md
 package-lock.json
+
+coverage/
