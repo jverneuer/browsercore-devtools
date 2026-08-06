@@ -20,7 +20,8 @@
  * Reference: https://github.com/FoxIO-LLC/JA4
  */
 
-import { createHash } from "node:crypto";
+import { crypto } from "./crypto-provider.js";
+import { bytesToHex } from "./compare.js";
 import { Ja4ParseError } from "./ja4-errors.js";
 import {
     EXT_ALPN,
@@ -76,7 +77,8 @@ export { Ja4ParseError };
 
 /** First 12 hex chars of the SHA-256 digest of `input`. */
 export function sha256First12(input: string): string {
-    return createHash("sha256").update(input).digest("hex").slice(0, 12);
+    const digest = crypto.hash("sha256", new TextEncoder().encode(input));
+    return bytesToHex(digest).slice(0, 12);
 }
 
 /** ALPN code: first char of first ALPN + first char of last ALPN, or "00". */

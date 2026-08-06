@@ -53,3 +53,21 @@ export class ProfileDiffError extends DevtoolsError {
         super("ProfileDiffError", message, options);
     }
 }
+
+/** A benchmark flag could not be parsed. */
+export class BenchError extends DevtoolsError {
+    public override readonly kind = "BenchError" as const;
+
+    constructor(message: string, options?: { cause?: Error }) {
+        super("BenchError", message, options);
+    }
+}
+
+/** A CLI command could not be dispatched (unknown command, etc.). */
+export class CliError extends DevtoolsError {
+    public override readonly kind = "CliError" as const;
+
+    constructor(message: string, options?: { cause?: Error }) {
+        super("CliError", message, options);
+    }
+}
