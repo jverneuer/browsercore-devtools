@@ -12,6 +12,7 @@ import { visualizeTlsHandshake, visualizeHttp2Stream } from "./visualizer/visual
 import { diffProfiles } from "./diff/profileDiff.js";
 import { inspectCertificate } from "./cert/certInspector.js";
 import { benchmarkTlsHandshake, benchmarkHttp2Request, type BenchStats } from "./bench/index.js";
+import { BenchError, CliError } from "./errors.js";
 import type { InspectionSession, PacketProtocol } from "./types.js";
 import type { ProfileId } from "@browsercore/profiles";
 
@@ -143,16 +144,16 @@ function parseBenchFlags(argv: ReadonlyArray<string>): {
         } else if (arg === "--iterations" || arg === "-n") {
             const next = argv[i + 1];
             if (next === undefined) {
-                throw new Error(`bench: '${arg}' requires a number`);
+                throw new BenchError(`bench: '${arg}' requires a number`);
             }
             const n = Number(next);
             if (!Number.isFinite(n) || n < 1) {
-                throw new Error(`bench: invalid iteration count '${next}'`);
+                throw new BenchError(`bench: invalid iteration count '${next}'`);
             }
             iterations = Math.floor(n);
             i++;
         } else {
-            throw new Error(`bench: unknown flag '${arg}' — see 'network-devtools bench --help'`);
+            throw new BenchError(`bench: unknown flag '${arg}' — see 'network-devtools bench --help'`);
         }
     }
 
@@ -220,6 +221,6 @@ export function dispatch(
             cmdBench(argv, write);
             break;
         default:
-            throw new Error(`Unknown command '${command}' — see 'network-devtools --help'`);
+            throw new CliError(`Unknown command '${command}' — see 'network-devtools --help'`);
     }
 }

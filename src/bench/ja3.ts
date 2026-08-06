@@ -11,7 +11,8 @@
  * its TLS record wrapper.
  */
 
-import { createHash } from "node:crypto";
+import { crypto } from "./crypto-provider.js";
+import { bytesToHex } from "./compare.js";
 
 /** Reasons a ClientHello cannot be parsed into a JA3 input. */
 export class Ja3ParseError extends Error {
@@ -44,7 +45,8 @@ export function computeJa3(clientHello: Uint8Array): string {
     const ja3String = [s.version, s.ciphers, s.extensions, s.supportedGroups, s.ecPointFormats].join(
         ",",
     );
-    return createHash("md5").update(ja3String).digest("hex");
+    const digest = crypto.hash("md5", new TextEncoder().encode(ja3String));
+    return bytesToHex(digest);
 }
 
 /** JA3 input segments (for inspection/testing). */
