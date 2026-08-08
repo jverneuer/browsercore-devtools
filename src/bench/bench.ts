@@ -12,12 +12,19 @@
  * throughput.
  */
 
+import { gunzipSync, gzipSync } from "node:zlib";
 import type { BenchStats } from "./types.js";
-import { fsProvider } from "./file-provider.js";
+import { createFileSystemProvider } from "./file-provider.js";
 import { computeJa3 } from "./ja3.js";
 import { computeJa4 } from "./ja4.js";
 import { compareBytes } from "./compare.js";
-import { compression } from "@browsercore/compression";
+
+const fsProvider = createFileSystemProvider();
+
+const compression = {
+    gzip: (data: Uint8Array): Uint8Array => new Uint8Array(gzipSync(data)),
+    gunzip: (data: Uint8Array): Uint8Array => new Uint8Array(gunzipSync(data)),
+};
 
 const here = import.meta.dirname;
 // src/bench -> captures/ (vendored alongside this module).

@@ -20,8 +20,10 @@
  * Reference: https://github.com/FoxIO-LLC/JA4
  */
 
-import { crypto } from "./crypto-provider.js";
+import { createCryptoProvider } from "./crypto-provider.js";
 import { bytesToHex } from "./compare.js";
+
+const crypto = createCryptoProvider();
 import { Ja4ParseError } from "./ja4-errors.js";
 import {
     EXT_ALPN,

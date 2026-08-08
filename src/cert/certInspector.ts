@@ -7,7 +7,7 @@
  * {@link CertParseError} on anything it cannot interpret.
  */
 
-import { crypto } from "@browsercore/crypto";
+import { createHash } from "node:crypto";
 import { CertParseError } from "../errors.js";
 import type { CertInfo } from "../types.js";
 import { toErrorOptions } from "../utils.js";
@@ -242,7 +242,7 @@ function maybePemToDer(input: Uint8Array): Uint8Array | null {
 
 /** Compute the SHA-256 fingerprint of the DER bytes, colon-separated. */
 function fingerprintHex(der: Uint8Array): string {
-    const digest = crypto.sha256(der);
+    const digest = new Uint8Array(createHash("sha256").update(der).digest());
     const hex = toHex(digest);
     const pairs: string[] = [];
     for (let i = 0; i < hex.length; i += 2) {
