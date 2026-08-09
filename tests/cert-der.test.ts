@@ -35,7 +35,7 @@ describe("DerCursor", () => {
 
     it("readTlv parses a TLV and advances past its content", () => {
         // SEQUENCE { OCTET STRING (0x04) of 2 bytes }
-        const buf = fromHex("300404 02 abcd".replace(/\s/g, ""));
+        const buf = fromHex("300404 02 abcd".replaceAll(/\s/gu, ""));
         const c = new DerCursor(buf);
         const outer = c.readTlv();
         expect(outer.tag).toBe(0x30);
@@ -108,7 +108,7 @@ describe("parseTime", () => {
 
     it("throws CertParseError when the tag is neither UTCTime nor GeneralizedTime", () => {
         expect(() => parseTime(0x02, new TextEncoder().encode("260101000000Z"))).toThrow(CertParseError);
-        expect(() => parseTime(0x02, new TextEncoder().encode("260101000000Z"))).toThrow(/expected time tag/);
+        expect(() => parseTime(0x02, new TextEncoder().encode("260101000000Z"))).toThrow(/expected time tag/u);
     });
 
     it("rejects a non-Z (offset) timestamp with CertParseError instead of dropping the offset", () => {
@@ -138,6 +138,6 @@ describe("decodeStringTag", () => {
     it("throws CertParseError for an unsupported string tag", () => {
         // INTEGER (0x02) is not a string type.
         expect(() => decodeStringTag(0x02, new Uint8Array())).toThrow(CertParseError);
-        expect(() => decodeStringTag(0x02, new Uint8Array())).toThrow(/unsupported string tag/);
+        expect(() => decodeStringTag(0x02, new Uint8Array())).toThrow(/unsupported string tag/u);
     });
 });

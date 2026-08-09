@@ -16,7 +16,7 @@ describe("exportToJson — round-trips and edge values", () => {
         // JSON.stringify(undefined) yields the undefined *value*, which would
         // violate the declared `: string` return type; the `?? "null"` guard
         // canonicalizes it.
-        const out = exportToJson(undefined);
+        const out = exportToJson();
         expect(typeof out).toBe("string");
         expect(out).toBe("null");
     });
@@ -67,7 +67,7 @@ describe("exportToHtml — scalar and composite rendering", () => {
     it("escapes every special HTML character in both title and string values", () => {
         const html = exportToHtml(`<a>"&'</a>`, { k: `<b>"&'</b>` });
         // No raw injection vectors remain.
-        expect(html).not.toMatch(/<a>|<b>/);
+        expect(html).not.toMatch(/<a>|<b>/u);
         expect(html).toContain("&lt;a&gt;");
         expect(html).toContain("&lt;b&gt;");
         expect(html).toContain("&quot;");
@@ -79,7 +79,7 @@ describe("exportToHtml — scalar and composite rendering", () => {
         // renderHtmlValue now folds bigint into the numeric class alongside number.
         const html = exportToHtml("T", { big: 10n });
         expect(html).toContain(">10<");
-        const row = html.match(/big[^]*?\n/)?.[0] ?? html;
+        const row = html.match(/big[^]*?\n/u)?.[0] ?? html;
         expect(row).toContain("num");
         expect(row).not.toContain("bool");
     });
@@ -122,6 +122,7 @@ describe("exportToHtml — values that defeat serialization", () => {
     it("renders a symbol with no description as Symbol()", () => {
         // Symbol() (no descriptor) has description === undefined, so the
         // `value.description ?? ""` fallback renders the empty parens.
+        // eslint-disable-next-line symbol-description
         const html = exportToHtml("T", Symbol());
         expect(html).toContain("Symbol()");
         expect(html).toContain("class=\"any\"");

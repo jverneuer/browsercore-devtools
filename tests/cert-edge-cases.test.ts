@@ -32,7 +32,7 @@ describe("inspectCertificate — TBS structural errors", () => {
         // Outer SEQUENCE whose first child (the TBS) is NULL.
         const cert = seq(nullTlv(), seq(oidTlv(OID_SHA256_RSA), nullTlv()), new Uint8Array());
         expect(() => inspectCertificate(cert)).toThrow(CertParseError);
-        expect(() => inspectCertificate(cert)).toThrow(/malformed TBSCertificate/);
+        expect(() => inspectCertificate(cert)).toThrow(/malformed TBSCertificate/u);
     });
 });
 
@@ -53,14 +53,14 @@ describe("inspectCertificate — distinguished-name parsing", () => {
     it("throws when an RDN attribute is not a SEQUENCE", () => {
         // SET whose direct child is an OID TLV (should be SEQUENCE { OID, value }).
         expect(() => inspectCertificate(buildCert({ issuer: dn(setof(oidTlv(OID_CN))) }))).toThrow(
-            /expected SEQUENCE in attribute/,
+            /expected SEQUENCE in attribute/u,
         );
     });
 
     it("throws when the attribute's first element is not an OID", () => {
         // SEQUENCE { INTEGER, UTF8String } — OID missing.
         expect(() => inspectCertificate(buildCert({ issuer: dn(setof(seq(intTlv("42"), utf8Tlv("Root")))) }))).toThrow(
-            /expected OID in attribute/,
+            /expected OID in attribute/u,
         );
     });
 });
@@ -239,6 +239,6 @@ describe("inspectCertificate — error wrapping contract", () => {
         const info = inspectCertificate(new TextEncoder().encode(withJunk));
         expect(info.subject).toContain("CN=");
         expect(info.issuer).toContain("Test");
-        expect(info.fingerprintSha256).toMatch(/^[0-9a-f]{2}(:[0-9a-f]{2}){31}$/);
+        expect(info.fingerprintSha256).toMatch(/^[0-9a-f]{2}(:[0-9a-f]{2}){31}$/u);
     });
 });

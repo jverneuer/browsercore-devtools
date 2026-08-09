@@ -29,8 +29,10 @@ export class NodeCryptoProvider implements CryptoProvider {
 }
 
 /**
- * Default singleton — the hashing backend the fingerprint modules call into.
- * Tests can swap this for a fake provider to exercise the fingerprint logic
- * without any real crypto.
+ * Factory that returns the default {@link CryptoProvider} backed by
+ * `node:crypto`. Centralizes the choice of hashing backend so callers can
+ * swap the implementation in one place.
  */
-export const crypto: CryptoProvider = new NodeCryptoProvider();
+export function createCryptoProvider(): CryptoProvider {
+    return new NodeCryptoProvider();
+}

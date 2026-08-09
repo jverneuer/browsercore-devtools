@@ -32,8 +32,10 @@ export class NodeFileSystemProvider implements FileSystemProvider {
 }
 
 /**
- * Default singleton — the file-system backend the benchmark + CLI modules call
- * into. Tests can swap this for a fake provider to exercise file-dependent
- * paths without the real filesystem.
+ * Factory that returns the default {@link FileSystemProvider} backed by
+ * `node:fs`/`node:path`. Centralizes the choice of file-system backend so
+ * callers can swap the implementation in one place.
  */
-export const fsProvider: FileSystemProvider = new NodeFileSystemProvider();
+export function createFileSystemProvider(): FileSystemProvider {
+    return new NodeFileSystemProvider();
+}

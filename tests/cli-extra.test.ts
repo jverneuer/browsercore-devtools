@@ -31,7 +31,7 @@ describe("dispatch — unknown command surface", () => {
             throw new Error("expected to throw");
         } catch (err) {
             expect((err as Error).message).toContain("totally-unknown");
-            expect((err as Error).message).toMatch(/Unknown command/);
+            expect((err as Error).message).toMatch(/Unknown command/u);
         }
     });
 });

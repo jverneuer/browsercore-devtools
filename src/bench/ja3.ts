@@ -11,8 +11,10 @@
  * its TLS record wrapper.
  */
 
-import { crypto } from "./crypto-provider.js";
+import { createCryptoProvider } from "./crypto-provider.js";
 import { bytesToHex } from "./compare.js";
+
+const crypto = createCryptoProvider();
 
 /** Reasons a ClientHello cannot be parsed into a JA3 input. */
 export class Ja3ParseError extends Error {

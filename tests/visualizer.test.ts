@@ -111,7 +111,7 @@ describe("decodeHttp1Message", () => {
     });
 
     it("stops a chunked body at the terminating zero-size chunk", () => {
-        const chunked = "5\r\nhello\x00\r\n0\r\n\r\nTRAILER";
+        const chunked = "5\r\nhello\u0000\r\n0\r\n\r\nTRAILER";
         const text = `HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n${chunked}`;
         const msg = decodeHttp1Message(new TextEncoder().encode(text));
         // First chunk "hello\x00" (5 bytes) is decoded; the 0-size chunk terminates.
@@ -200,11 +200,11 @@ describe("assertNever exhaustiveness", () => {
     it("throws for an unreachable protocol value", () => {
         // Cast an invalid protocol through the type system to exercise the default branch.
         const invalid = "quic" as unknown as PacketProtocol;
-        expect(() => assertNever(invalid)).toThrow(/Unexpected value/);
+        expect(() => assertNever(invalid)).toThrow(/Unexpected value/u);
     });
 
     it("throws for a never value", () => {
         // Force a runtime value of the never-typed parameter.
-        expect(() => assertNever("surprise" as never)).toThrow(/Unexpected value/);
+        expect(() => assertNever("surprise" as never)).toThrow(/Unexpected value/u);
     });
 });

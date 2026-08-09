@@ -23,7 +23,7 @@ describe("toErrorOptions", () => {
 
     it("returns undefined for null and undefined", () => {
         expect(toErrorOptions(null)).toBeUndefined();
-        expect(toErrorOptions(undefined)).toBeUndefined();
+        expect(toErrorOptions()).toBeUndefined();
     });
 
     it("returns undefined for a plain object that is not an Error instance", () => {

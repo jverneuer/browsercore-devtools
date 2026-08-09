@@ -27,7 +27,7 @@ export function makeMinimalCert(): string {
         "6rFPX0yvVIRucmfgVwezdZRa/1wwUaW8ft0Zcgk79C1HLdn2oYjlDh3EYmj/B0ul" +
         "QGbtZchxlogEy7W/v22cNypLlaRRkOYoXkC77I5+yCShVfqEPqCTrzMu7zi0EtdM" +
         "ezen4FLFuPGLzooovE/t9eIesAKmu47vWNxpZA==";
-    const lines = b64.match(/.{1,64}/g) ?? [];
+    const lines = b64.match(/.{1,64}/gu) ?? [];
     return ["-----BEGIN CERTIFICATE-----", ...lines, "-----END CERTIFICATE-----"].join("\n");
 }
 
@@ -40,7 +40,7 @@ const ENC = new TextEncoder();
 
 /** Decode a hex string (whitespace tolerated) into bytes. */
 export function fromHex(hex: string): Uint8Array {
-    const clean = hex.replace(/\s+/g, "");
+    const clean = hex.replaceAll(/\s+/gu, "");
     const out = new Uint8Array(clean.length / 2);
     for (let i = 0; i < out.length; i++) {
         out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);

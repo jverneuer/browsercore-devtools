@@ -36,8 +36,8 @@ describe("diffProfiles — Date and mixed-type comparisons", () => {
         const diff = diffProfiles(a.id, b.id);
         const entry = diff.differences.find((d) => d.path === "stamp");
         expect(entry).toBeDefined();
-        expect(entry!.a).toBeInstanceOf(Date);
-        expect(entry!.b).toBe(1_000_000);
+        expect(entry?.a).toBeInstanceOf(Date);
+        expect(entry?.b).toBe(1_000_000);
     });
 
     it("treats equal timestamps (different Date instances) as equal", () => {
@@ -97,8 +97,8 @@ describe("diffProfiles — path ordering and nesting", () => {
         const diff = diffProfiles(a.id, b.id);
         const entry = diff.differences.find((d) => d.path === "items/1");
         expect(entry).toBeDefined();
-        expect(entry!.a).toBe("<missing>");
-        expect(entry!.b).toMatchObject({ v: 2 });
+        expect(entry?.a).toBe("<missing>");
+        expect(entry?.b).toMatchObject({ v: 2 });
     });
 });
 

@@ -41,7 +41,7 @@ describe("_dispatch", () => {
     });
 
     it("throws on an unknown command", () => {
-        expect(() => run(["node", "network-devtools", "bogus"])).toThrow(/Unknown command 'bogus'/);
+        expect(() => run(["node", "network-devtools", "bogus"])).toThrow(/Unknown command 'bogus'/u);
     });
 
     it("inspect summarizes a capture file", () => {
@@ -166,13 +166,13 @@ describe("_dispatch", () => {
 
     it("bench throws on an unknown flag", () => {
         expect(() => run(["node", "network-devtools", "bench", "--bogus"])).toThrow(
-            /unknown flag '--bogus'/,
+            /unknown flag '--bogus'/u,
         );
     });
 
     it("bench throws when --iterations is missing its value", () => {
         expect(() => run(["node", "network-devtools", "bench", "--iterations"])).toThrow(
-            /requires a number/,
+            /requires a number/u,
         );
     });
 });

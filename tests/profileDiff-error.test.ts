@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { diffProfiles } from "../src/diff/profileDiff.js";
 import { ProfileDiffError } from "../src/errors.js";
-import type { ProfileId } from "@browsercore/profiles";
+import type { getProfile, ProfileId } from "@browsercore/profiles";
 
 // vi.mock is hoisted above imports, so the mock reference it closes over must be
 // created in a vi.hoisted scope (otherwise it runs before the const is initialized).
@@ -19,10 +19,10 @@ const { getProfileMock } = vi.hoisted(() => ({ getProfileMock: vi.fn() }));
  * to throw on demand and assert each branch's contract.
  */
 vi.mock("@browsercore/profiles", async (importOriginal) => {
-    const actual = await importOriginal<typeof import("@browsercore/profiles")>();
+    const actual = await importOriginal<{ getProfile: typeof getProfile }>();
     return {
         ...actual,
-        getProfile: getProfileMock,
+        getProfile: getProfileMock as typeof getProfile,
     };
 });
 
@@ -57,7 +57,7 @@ describe("diffProfiles — catch-block error contract", () => {
 
     it("stringifies a non-Error thrown value via String(err)", () => {
         getProfileMock.mockImplementation(() => {
-            throw 404;
+            throw new Error("404");
         });
         try {
             diffProfiles("a" as ProfileId, "b" as ProfileId);

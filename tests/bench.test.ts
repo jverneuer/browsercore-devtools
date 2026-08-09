@@ -4,10 +4,6 @@ import { computeJa3, parseClientHello, Ja3ParseError } from "../src/bench/ja3.js
 import { computeJa4, computeJa4Fingerprint, parseJa4ClientHello, Ja4ParseError } from "../src/bench/ja4.js";
 import {
     GREASE_VALUES,
-    EXT_SNI,
-    EXT_SUPPORTED_GROUPS,
-    EXT_EC_POINT_FORMATS,
-    EXT_ALPN,
     uint16,
     uint24,
     hex4,
@@ -94,19 +90,19 @@ describe("ja3", () => {
     it("computes a stable JA3 digest", () => {
         const hello = minimalClientHello();
         const digest = computeJa3(hello);
-        expect(digest).toMatch(/^[0-9a-f]{32}$/);
+        expect(digest).toMatch(/^[0-9a-f]{32}$/u);
     });
 
     it("throws Ja3ParseError on a buffer that is neither TLS record nor handshake", () => {
         const bad = new Uint8Array([0x00, 0x00, 0x00, 0x00]);
         expect(() => parseClientHello(bad)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(bad)).toThrow(/Not a TLS record/);
+        expect(() => parseClientHello(bad)).toThrow(/Not a TLS record/u);
     });
 
     it("throws Ja3ParseError on a truncated TLS record", () => {
         const bad = new Uint8Array([0x16, 0x03]); // too short for a record
         expect(() => parseClientHello(bad)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(bad)).toThrow(/TLS record too short/);
+        expect(() => parseClientHello(bad)).toThrow(/TLS record too short/u);
     });
 
     it("throws Ja3ParseError when record+0 is not a ClientHello", () => {
@@ -114,7 +110,7 @@ describe("ja3", () => {
         const inner = minimalClientHello();
         const bad = new Uint8Array([0x16, 0x03, 0x03, (inner.length >> 8) & 0xff, inner.length & 0xff, 0x02, ...inner.slice(1)]);
         expect(() => parseClientHello(bad)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(bad)).toThrow(/Expected ClientHello/);
+        expect(() => parseClientHello(bad)).toThrow(/Expected ClientHello/u);
     });
 
     it("throws Ja3ParseError when handshake length exceeds available bytes (bare)", () => {
@@ -131,7 +127,7 @@ describe("ja3", () => {
         const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]); // 38 bytes total
         expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(buf)).toThrow(/session id/);
+        expect(() => parseClientHello(buf)).toThrow(/session id/u);
     });
 
     it("throws Ja3ParseError on truncated compression methods", () => {
@@ -144,7 +140,7 @@ describe("ja3", () => {
         const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(buf)).toThrow(/compression methods/);
+        expect(() => parseClientHello(buf)).toThrow(/compression methods/u);
     });
 
     it("throws Ja3ParseError on truncated ec_point_formats list", () => {
@@ -202,7 +198,7 @@ describe("ja3", () => {
         const handshakeLen = [0x00, 0x01, 0x00]; // claims 256 bytes, but only 35 available
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(buf)).toThrow(/Handshake length/);
+        expect(() => parseClientHello(buf)).toThrow(/Handshake length/u);
     });
 
     it("returns no extensions when pos + 2 > end after compression methods", () => {
@@ -225,7 +221,7 @@ describe("ja3", () => {
         // Set handshakeLen large so it exceeds available bytes
         const buf = new Uint8Array([0x16, 0x03, 0x03, 0x00, 0x20, 0x01, 0x00, 0x01, 0x00, 0x03, 0x04]);
         expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(buf)).toThrow(/Handshake length/);
+        expect(() => parseClientHello(buf)).toThrow(/Handshake length/u);
     });
 
     it("throws Ja3ParseError when ec_point_formats listLen byte is out of bounds", () => {
@@ -280,7 +276,7 @@ describe("ja3", () => {
         const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseClientHello(buf)).toThrow(Ja3ParseError);
-        expect(() => parseClientHello(buf)).toThrow(/readUint16List out of bounds/);
+        expect(() => parseClientHello(buf)).toThrow(/readUint16List out of bounds/u);
     });
 });
 
@@ -297,16 +293,16 @@ describe("ja4", () => {
         const hello = minimalClientHello();
         const tag = computeJa4(hello);
         // JA4_a = t{ciphers:02d}{exts:02d}{sni_flag}{version}{alpn}
-        expect(tag).toMatch(/^t\d{4}[a-z]\d{2}[0-9a]{2}_[0-9a-f]{12}_[0-9a-f]{12}_[0-9a-f]{12}$/);
+        expect(tag).toMatch(/^t\d{4}[a-z]\d{2}[0-9a]{2}_[0-9a-f]{12}_[0-9a-f]{12}_[0-9a-f]{12}$/u);
     });
 
     it("computeJa4Fingerprint returns all four parts", () => {
         const hello = minimalClientHello();
         const fp = computeJa4Fingerprint(hello);
-        expect(fp.a).toMatch(/^t\d{4}/);
-        expect(fp.b).toMatch(/^[0-9a-f]{12}$/);
-        expect(fp.c).toMatch(/^[0-9a-f]{12}$/);
-        expect(fp.f).toMatch(/^[0-9a-f]{12}$/);
+        expect(fp.a).toMatch(/^t\d{4}/u);
+        expect(fp.b).toMatch(/^[0-9a-f]{12}$/u);
+        expect(fp.c).toMatch(/^[0-9a-f]{12}$/u);
+        expect(fp.f).toMatch(/^[0-9a-f]{12}$/u);
         expect(fp.tag).toBe(`${fp.a}_${fp.b}_${fp.c}_${fp.f}`);
     });
 
@@ -318,32 +314,32 @@ describe("ja4", () => {
 
     it("throws Ja4ParseError on empty buffer", () => {
         expect(() => parseJa4ClientHello(new Uint8Array(0))).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(new Uint8Array(0))).toThrow(/empty/);
+        expect(() => parseJa4ClientHello(new Uint8Array(0))).toThrow(/empty/u);
     });
 
     it("throws Ja4ParseError on a buffer that is neither TLS record nor handshake", () => {
         const bad = new Uint8Array([0x00, 0x00, 0x00, 0x00]);
         expect(() => parseJa4ClientHello(bad)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(bad)).toThrow(/Not a TLS record/);
+        expect(() => parseJa4ClientHello(bad)).toThrow(/Not a TLS record/u);
     });
 
     it("throws Ja4ParseError on a truncated TLS record", () => {
         const bad = new Uint8Array([0x16, 0x03]);
         expect(() => parseJa4ClientHello(bad)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(bad)).toThrow(/TLS record too short/);
+        expect(() => parseJa4ClientHello(bad)).toThrow(/TLS record too short/u);
     });
 
     it("throws Ja4ParseError when record+0 is not a ClientHello", () => {
         const inner = minimalClientHello();
         const bad = new Uint8Array([0x16, 0x03, 0x03, (inner.length >> 8) & 0xff, inner.length & 0xff, 0x02, ...inner.slice(1)]);
         expect(() => parseJa4ClientHello(bad)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(bad)).toThrow(/Expected ClientHello/);
+        expect(() => parseJa4ClientHello(bad)).toThrow(/Expected ClientHello/u);
     });
 
     it("throws Ja4ParseError on a truncated bare ClientHello", () => {
         const bad = new Uint8Array([0x01, 0x00]); // too short for bare
         expect(() => parseJa4ClientHello(bad)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(bad)).toThrow(/Bare ClientHello too short/);
+        expect(() => parseJa4ClientHello(bad)).toThrow(/Bare ClientHello too short/u);
     });
 
     it("throws Ja4ParseError when handshake length exceeds available bytes", () => {
@@ -360,7 +356,7 @@ describe("ja4", () => {
         const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]); // 38 bytes total
         expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(buf)).toThrow(/session id/);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/session id/u);
     });
 
     it("throws Ja4ParseError on truncated cipher suites", () => {
@@ -372,7 +368,7 @@ describe("ja4", () => {
         const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]); // 39 bytes total
         expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(buf)).toThrow(/cipher suites/);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/cipher suites/u);
     });
 
     it("throws Ja4ParseError on truncated compression methods", () => {
@@ -385,7 +381,7 @@ describe("ja4", () => {
         const handshakeLen = [(body.length >> 16) & 0xff, (body.length >> 8) & 0xff, body.length & 0xff];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(buf)).toThrow(/compression methods/);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/compression methods/u);
     });
 
     it("returns zeroed JA4_b and JA4_c when no ciphers/extensions after GREASE filtering", () => {
@@ -488,7 +484,7 @@ describe("ja4", () => {
         expect(parsed.alpnRaw).toBe("h2");
         // ALPN code should be first char of first + first char of last
         const fp = computeJa4Fingerprint(buf);
-        expect(fp.a).toMatch(/hh$/);
+        expect(fp.a).toMatch(/hh$/u);
     });
 
     it("skips GREASE extension types when building the extension list", () => {
@@ -528,7 +524,7 @@ describe("ja4", () => {
         const handshakeLen = [0x00, 0x00, 0x00];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(buf)).toThrow(/version/);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/version/u);
     });
 
     it("throws Ja4ParseError when pos exceeds end before session id (truncated random)", () => {
@@ -542,7 +538,7 @@ describe("ja4", () => {
         const handshakeLen = [0x00, 0x00, 0x02];
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(buf)).toThrow(/session id/);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/session id/u);
     });
 
     it("returns no extensions when pos + 2 > end after compression methods", () => {
@@ -572,7 +568,7 @@ describe("ja4", () => {
         const handshakeLen = [0x00, 0x00, 36]; // end = 40, pos(39) + 2 > 40 ✓
         const buf = new Uint8Array([0x01, ...handshakeLen, ...body]);
         expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(buf)).toThrow(/cipher suites/);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/cipher suites/u);
     });
 
     it("throws Ja4ParseError via readInt24 out of bounds in record wrapper", () => {
@@ -685,7 +681,7 @@ describe("ja4", () => {
         // Set handshakeLen large so it exceeds available
         const buf = new Uint8Array([0x16, 0x03, 0x03, 0x00, 0x20, 0x01, 0x00, 0x01, 0x00, 0x03, 0x04]);
         expect(() => parseJa4ClientHello(buf)).toThrow(Ja4ParseError);
-        expect(() => parseJa4ClientHello(buf)).toThrow(/Handshake length/);
+        expect(() => parseJa4ClientHello(buf)).toThrow(/Handshake length/u);
     });
 
     it("does not read supported_groups when extLen < 4", () => {
@@ -737,7 +733,7 @@ describe("ja4", () => {
         const parsed = parseJa4ClientHello(buf);
         expect(parsed.alpnRaw).toBe("h2");
         const fp = computeJa4Fingerprint(buf);
-        expect(fp.a).toMatch(/hh$/); // first char of first + first char of last = "h" + "h"
+        expect(fp.a).toMatch(/hh$/u); // first char of first + first char of last = "h" + "h"
     });
 });
 

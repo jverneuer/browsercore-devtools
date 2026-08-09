@@ -4,7 +4,7 @@ import { CertParseError } from "../src/errors.js";
 
 /** Build a DER buffer from a hex string. */
 function fromHex(hex: string): Uint8Array {
-    const clean = hex.replace(/\s+/g, "");
+    const clean = hex.replaceAll(/\s+/gu, "");
     const out = new Uint8Array(clean.length / 2);
     for (let i = 0; i < out.length; i++) {
         out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
@@ -130,7 +130,7 @@ const PEM_FOOTER = "\n-----END CERTIFICATE-----";
 
 /** Wrap base64 text in PEM armor. */
 function toPem(b64: string): string {
-    const lines = b64.match(/.{1,64}/g) ?? [];
+    const lines = b64.match(/.{1,64}/gu) ?? [];
     return PEM_HEADER + lines.join("\n") + PEM_FOOTER;
 }
 
@@ -143,11 +143,11 @@ describe("inspectCertificate", () => {
             expect(info.san).toEqual([]);
             expect(info.notBefore).toBeInstanceOf(Date);
             expect(info.notAfter).toBeInstanceOf(Date);
-            expect(info.fingerprintSha256).toMatch(/^[0-9a-f]{2}(:[0-9a-f]{2}){31}$/);
+            expect(info.fingerprintSha256).toMatch(/^[0-9a-f]{2}(:[0-9a-f]{2}){31}$/u);
         });
 
         it("parses a PEM certificate (strips armor)", () => {
-            const b64 = v1Der.reduce((acc, b) => acc + String.fromCharCode(b), "");
+            const b64 = v1Der.reduce((acc, b) => acc + String.fromCodePoint(b), "");
             const pem = toPem(btoa(b64));
             const info = inspectCertificate(new TextEncoder().encode(pem));
             expect(info.subject).toContain("CN=Leaf");
@@ -175,7 +175,7 @@ describe("inspectCertificate", () => {
 
         it("throws CertParseError when the top-level tag is not a SEQUENCE", () => {
             const der = fromHex("3100"); // SET, empty
-            expect(() => inspectCertificate(der)).toThrow(/expected SEQUENCE, got 0x/);
+            expect(() => inspectCertificate(der)).toThrow(/expected SEQUENCE, got 0x/u);
         });
 
         it("throws CertParseError on a truncated TBS body", () => {
@@ -189,19 +189,19 @@ describe("inspectCertificate", () => {
             // SEQUENCE claiming a 3-byte long-form length (0x82) but the length bytes
             // describe more content than the buffer holds.
             const der = fromHex("3082000500"); // length says 5, but only 1 byte follows
-            expect(() => inspectCertificate(der)).toThrow(/TLV length .* exceeds buffer/);
+            expect(() => inspectCertificate(der)).toThrow(/TLV length .* exceeds buffer/u);
         });
 
         it("throws CertParseError on an unsupported DER length form", () => {
             // SEQUENCE with a 5-byte long-form length (nbytes > 4 is rejected).
             const der = fromHex("30850000000000");
-            expect(() => inspectCertificate(der)).toThrow(/unsupported DER length form: 0x85/);
+            expect(() => inspectCertificate(der)).toThrow(/unsupported DER length form: 0x85/u);
         });
 
         it("throws CertParseError on a truncated DER length", () => {
             // SEQUENCE with long-form header saying 2 bytes of length, but only 1 follows.
             const der = fromHex("308201");
-            expect(() => inspectCertificate(der)).toThrow(/truncated DER long-form length/);
+            expect(() => inspectCertificate(der)).toThrow(/truncated DER long-form length/u);
         });
 
         it("throws CertParseError on an unsupported tag class", () => {
@@ -209,7 +209,7 @@ describe("inspectCertificate", () => {
             // Build an outer SEQUENCE whose first inner TLV carries the bad tag.
             const bad = tlv(0x60, fromHex("0500")); // app-specific constructed
             const cert = tlv(0x30, new Uint8Array([...bad, ...fromHex("0500")]));
-            expect(() => inspectCertificate(cert)).toThrow(/unsupported tag class: 0x40/);
+            expect(() => inspectCertificate(cert)).toThrow(/unsupported tag class: 0x40/u);
         });
 
         it("throws CertParseError when a DN attribute is not a SET", () => {
@@ -229,7 +229,7 @@ describe("inspectCertificate", () => {
             );
             const signature = tlv(0x03, fromHex("00"));
             const cert = tlv(0x30, new Uint8Array([...tbs, ...sigAlg, ...signature]));
-            expect(() => inspectCertificate(cert)).toThrow(/expected SET in RDN, got 0x30/);
+            expect(() => inspectCertificate(cert)).toThrow(/expected SET in RDN, got 0x30/u);
         });
 
         it("throws CertParseError when an attribute value tag is not a string type", () => {
@@ -249,7 +249,7 @@ describe("inspectCertificate", () => {
             );
             const signature = tlv(0x03, fromHex("00"));
             const cert = tlv(0x30, new Uint8Array([...tbs, ...sigAlg, ...signature]));
-            expect(() => inspectCertificate(cert)).toThrow(/unsupported string tag 0x2 in DN/);
+            expect(() => inspectCertificate(cert)).toThrow(/unsupported string tag 0x2 in DN/u);
         });
 
         it("throws CertParseError when the validity time tag is not UTCTime/GeneralizedTime", () => {
@@ -268,7 +268,7 @@ describe("inspectCertificate", () => {
             );
             const signature = tlv(0x03, fromHex("00"));
             const cert = tlv(0x30, new Uint8Array([...tbs, ...sigAlg, ...signature]));
-            expect(() => inspectCertificate(cert)).toThrow(/expected time tag, got 0x2/);
+            expect(() => inspectCertificate(cert)).toThrow(/expected time tag, got 0x2/u);
         });
     });
 
@@ -289,7 +289,7 @@ describe("inspectCertificate", () => {
             );
             const signature = tlv(0x03, fromHex("00"));
             const cert = tlv(0x30, new Uint8Array([...tbs, ...sigAlg, ...signature]));
-            expect(() => inspectCertificate(cert)).toThrow(/empty OID/);
+            expect(() => inspectCertificate(cert)).toThrow(/empty OID/u);
         });
 
         it("throws CertParseError on a truncated OID", () => {
@@ -310,7 +310,7 @@ describe("inspectCertificate", () => {
             );
             const signature = tlv(0x03, fromHex("00"));
             const cert = tlv(0x30, new Uint8Array([...tbs, ...sigAlg, ...signature]));
-            expect(() => inspectCertificate(cert)).toThrow(/truncated OID/);
+            expect(() => inspectCertificate(cert)).toThrow(/truncated OID/u);
         });
     });
 
