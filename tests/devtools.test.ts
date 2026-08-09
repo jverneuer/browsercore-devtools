@@ -28,11 +28,11 @@ describe("createInspectorSession", () => {
             decoded: null,
         });
         expect(session.frames.length).toBe(1);
-        const frame = session.frames[0]!;
-        expect(frame.direction).toBe("sent");
-        expect(frame.protocol).toBe("tls");
-        expect(frame.bytes).toEqual(new Uint8Array([0x16, 0x03, 0x01]));
-        expect(typeof frame.timestamp).toBe("number");
+        const frame = session.frames[0];
+        expect(frame?.direction).toBe("sent");
+        expect(frame?.protocol).toBe("tls");
+        expect(frame?.bytes).toEqual(new Uint8Array([0x16, 0x03, 0x01]));
+        expect(typeof frame?.timestamp).toBe("number");
     });
 
     it("filter returns matching frames", () => {
@@ -41,7 +41,7 @@ describe("createInspectorSession", () => {
         session.addFrame({ direction: "received", protocol: "http2", bytes: new Uint8Array(), decoded: null });
         const tls = session.filter((f) => f.protocol === "tls");
         expect(tls.length).toBe(1);
-        expect(tls[0]!.protocol).toBe("tls");
+        expect(tls[0]?.protocol).toBe("tls");
     });
 });
 
@@ -54,7 +54,7 @@ describe("decodeTlsRecord", () => {
         expect(decoded.contentType).toBe(22);
         expect(decoded.version).toContain("handshake");
         expect(decoded.fragments.length).toBe(1);
-        expect(decoded.fragments[0]!.length).toBe(fragment.length);
+        expect(decoded.fragments[0]?.length).toBe(fragment.length);
     });
 });
 

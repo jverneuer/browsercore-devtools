@@ -34,7 +34,7 @@ describe("renderFrame — timestamp & hex-preview formatting", () => {
         const bytes = new Uint8Array(15).fill(0xab);
         const out = renderFrame(frame("tcp", bytes));
         // 15 pairs, last pair has no trailing space.
-        expect(out.trimEnd()).toMatch(/ab$/);
+        expect(out.trimEnd()).toMatch(/ab$/u);
         expect(out).not.toContain("… (+");
     });
 
@@ -128,13 +128,13 @@ describe("renderFrame — exhaustiveness guards (assertNever)", () => {
         // The switch in renderFrame is exhaustive over PacketProtocol; a value
         // outside the union must fall through to the default → assertNever.
         const bad = { timestamp: 0, direction: "sent", protocol: "quic", bytes: new Uint8Array(), decoded: null };
-        expect(() => renderFrame(bad as PacketFrame)).toThrow(/Unexpected value/);
+        expect(() => renderFrame(bad as PacketFrame)).toThrow(/Unexpected value/u);
     });
 
     it("throws via assertNever for an unhandled direction", () => {
         // directionGlyph is exhaustive over PacketDirection; an invalid direction
         // (reached via the generic TCP renderer) must hit its default → assertNever.
         const bad = { timestamp: 0, direction: "sideways", protocol: "tcp", bytes: new Uint8Array([0x01]), decoded: null };
-        expect(() => renderFrame(bad as PacketFrame)).toThrow(/Unexpected value/);
+        expect(() => renderFrame(bad as PacketFrame)).toThrow(/Unexpected value/u);
     });
 });

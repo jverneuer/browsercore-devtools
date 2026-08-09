@@ -13,14 +13,14 @@ describe("createInspectorSession", () => {
     it("addFrame fills in a timestamp when omitted", () => {
         const session = createInspectorSession();
         session.addFrame({ direction: "sent", protocol: "tcp", bytes: new Uint8Array(), decoded: null });
-        const frame = session.frames[0]!;
-        expect(typeof frame.timestamp).toBe("number");
+        const frame = session.frames[0];
+        expect(typeof frame?.timestamp).toBe("number");
     });
 
     it("addFrame preserves an explicit timestamp", () => {
         const session = createInspectorSession();
         session.addFrame({ direction: "sent", protocol: "tcp", bytes: new Uint8Array(), decoded: null, timestamp: 12345 });
-        expect(session.frames[0]!.timestamp).toBe(12345);
+        expect(session.frames[0]?.timestamp).toBe(12345);
     });
 
     it("filter returns only matching frames", () => {
@@ -29,7 +29,7 @@ describe("createInspectorSession", () => {
         session.addFrame({ direction: "received", protocol: "http2", bytes: new Uint8Array(), decoded: null });
         const tls = session.filter((f) => f.protocol === "tls");
         expect(tls.length).toBe(1);
-        expect(tls[0]!.protocol).toBe("tls");
+        expect(tls[0]?.protocol).toBe("tls");
     });
 });
 
@@ -41,7 +41,7 @@ describe("decodeTlsRecord", () => {
         expect(decoded.contentType).toBe(22);
         expect(decoded.version).toContain("handshake");
         expect(decoded.fragments.length).toBe(1);
-        expect(decoded.fragments[0]!.length).toBe(fragment.length);
+        expect(decoded.fragments[0]?.length).toBe(fragment.length);
     });
 
     it("decodes an application_data record", () => {

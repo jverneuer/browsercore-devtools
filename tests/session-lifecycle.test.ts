@@ -19,20 +19,20 @@ describe("inspector session — lifecycle and isolation", () => {
         const session = createInspectorSession();
         const bytes = new Uint8Array([0xde, 0xad]);
         session.addFrame({ direction: "sent", protocol: "tcp", bytes, decoded: null });
-        expect(session.frames[0]!.bytes).toBe(bytes);
+        expect(session.frames[0]?.bytes).toBe(bytes);
     });
 
     it("preserves a non-null decoded payload verbatim", () => {
         const session = createInspectorSession();
         const decoded = { summary: "ok", fields: [1, 2, 3] };
         session.addFrame({ direction: "received", protocol: "http2", bytes: new Uint8Array(), decoded });
-        expect(session.frames[0]!.decoded).toBe(decoded);
+        expect(session.frames[0]?.decoded).toBe(decoded);
     });
 
     it("preserves an explicit 0 timestamp rather than treating it as omitted", () => {
         const session = createInspectorSession();
         session.addFrame({ direction: "sent", protocol: "tcp", bytes: new Uint8Array(), decoded: null, timestamp: 0 });
-        expect(session.frames[0]!.timestamp).toBe(0);
+        expect(session.frames[0]?.timestamp).toBe(0);
     });
 
     it("filter returns a fresh array (mutating the result does not affect the session)", () => {
@@ -59,7 +59,7 @@ describe("inspector session — lifecycle and isolation", () => {
         session.addFrame({ direction: "sent", protocol: "tls", bytes: new Uint8Array(), decoded: null, timestamp: 300 });
         const sentLate = session.filter((f) => f.direction === "sent" && f.timestamp >= 200);
         expect(sentLate).toHaveLength(1);
-        expect(sentLate[0]!.timestamp).toBe(300);
+        expect(sentLate[0]?.timestamp).toBe(300);
     });
 });
 
@@ -68,7 +68,7 @@ describe("inspector session — concurrency / ordering", () => {
         const session = createInspectorSession();
         const protocols = ["tls", "http2", "http1", "tcp"] as const;
         for (let i = 0; i < 1000; i++) {
-            const protocol = protocols[i % protocols.length]!;
+            const protocol = protocols[i % protocols.length] as (typeof protocols)[number];
             session.addFrame({
                 direction: i % 2 === 0 ? "sent" : "received",
                 protocol,
@@ -79,13 +79,13 @@ describe("inspector session — concurrency / ordering", () => {
         }
         expect(session.frames.length).toBe(1000);
         // Insertion order is preserved.
-        expect(session.frames[0]!.timestamp).toBe(0);
-        expect(session.frames[999]!.timestamp).toBe(999);
+        expect(session.frames[0]?.timestamp).toBe(0);
+        expect(session.frames.at(-1)?.timestamp).toBe(999);
         // Filtering does not reorder.
         const h2 = session.filter((f) => f.protocol === "http2");
         expect(h2.length).toBe(250);
-        expect(h2[0]!.timestamp).toBe(1);
-        expect(h2[h2.length - 1]!.timestamp).toBe(997);
+        expect(h2[0]?.timestamp).toBe(1);
+        expect(h2.at(-1)?.timestamp).toBe(997);
     });
 
     it("two sessions do not share frame state", () => {
@@ -95,7 +95,7 @@ describe("inspector session — concurrency / ordering", () => {
         expect(a.frames.length).toBe(1);
         expect(b.frames.length).toBe(0);
         b.addFrame({ direction: "sent", protocol: "tcp", bytes: new Uint8Array([2]), decoded: null });
-        expect(a.frames[0]!.bytes[0]).toBe(1);
-        expect(b.frames[0]!.bytes[0]).toBe(2);
+        expect(a.frames[0]?.bytes[0]).toBe(1);
+        expect(b.frames[0]?.bytes[0]).toBe(2);
     });
 });

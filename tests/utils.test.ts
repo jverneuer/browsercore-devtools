@@ -4,7 +4,7 @@ import { assertNever, createId } from "../src/utils.js";
 describe("assertNever", () => {
     it("throws an Error describing the unexpected value", () => {
         // Cast through unknown to simulate an unreachable branch at runtime.
-        expect(() => assertNever("oops" as never)).toThrow(/Unexpected value/);
+        expect(() => assertNever("oops" as never)).toThrow(/Unexpected value/u);
     });
 
     it("stringifies the unexpected value in the message", () => {
