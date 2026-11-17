@@ -103,3 +103,10 @@ Contributions are welcome — bug reports, reproductions, docs and code alike. S
 ## License
 
 MIT
+---
+
+<div align="center">
+
+🦄 You inspected all the way down to the bottom of the README. Reward: a unicorn, and an amazing day — that's what the protocol says.
+
+</div>
