@@ -2,8 +2,9 @@
 
 
 [![npm version](https://img.shields.io/npm/v/@browsercore/devtools)](https://www.npmjs.com/package/@browsercore/devtools)
-[![coverage](https://img.shields.io/endpoint?url=https://jverneuer.github.io/browsercore-devtools/badge.json)](https://github.com/jverneuer/browsercore-devtools/blob/main/COVERAGE.md)
-[![lint](https://img.shields.io/github/actions/workflow/status/jverneuer/browsercore-devtools/ci.yml?label=lint)](https://github.com/jverneuer/browsercore-devtools/actions/workflows/ci.yml)
+[![coverage](https://img.shields.io/endpoint?url=https://jverneuer.github.io/browsercore-devtools/badge.json)](https://jverneuer.github.io/browsercore-devtools/COVERAGE.md)
+[![CI](https://img.shields.io/github/actions/workflow/status/jverneuer/browsercore-devtools/ci.yml?label=ci)](https://github.com/jverneuer/browsercore-devtools/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/@browsercore/devtools.svg)](LICENSE)
 
 Developer tooling for the browsercore stack: packet inspector, TLS/HTTP visualizers,
 profile diff, certificate inspector, and the `network-devtools` CLI. Depends on the
