@@ -1,6 +1,6 @@
 {
     "name": "@browsercore/devtools",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "Developer tooling — packet inspector, TLS/HTTP2 visualizer, profile diff, certificate inspector, benchmark CLI.",
     "repository": {
         "type": "git",
@@ -54,13 +54,13 @@
         "node": ">=26.0.0"
     },
     "dependencies": {
-        "@browsercore/cookies": "0.2.0",
-        "@browsercore/crypto": "0.2.5",
-        "@browsercore/fetch": "0.2.16",
-        "@browsercore/http1": "0.2.2",
-        "@browsercore/http2": "0.2.9",
-        "@browsercore/profiles": "0.2.3",
-        "@browsercore/tls": "^0.4.13",
-        "@browsercore/transport": "0.2.7"
+        "@browsercore/cookies": "0.2.3",
+        "@browsercore/crypto": "0.2.7",
+        "@browsercore/fetch": "0.2.25",
+        "@browsercore/http1": "0.2.6",
+        "@browsercore/http2": "0.2.14",
+        "@browsercore/profiles": "0.2.6",
+        "@browsercore/tls": "^0.4.17",
+        "@browsercore/transport": "0.2.10"
     }
 }

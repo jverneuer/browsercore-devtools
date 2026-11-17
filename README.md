@@ -74,6 +74,28 @@ console.log(info.subject, info.fingerprintSha256);
 | `ProfileDiffError` | class | Profile diff could not be computed |
 
 
+## Stack versions
+
+Devtools tracks the **platform-v2 stack**: a canonical `Clock` and the optional
+`Platform` / engine-injection surface defined in
+[`@browsercore/contracts`](https://github.com/jverneuer/browsercore-contracts)
+and assembled by [`browsersmith`](https://github.com/jverneuer/browsersmith),
+the composition root. The inspector still consumes the wire-facing parser
+exports (`parseRecordHeader` from `@browsercore/tls`, `parseFrameHeader` from
+`@browsercore/http2`) — platform-v2 was a type/wiring/injection change only, so
+decoding output is unchanged.
+
+| Package | Version |
+| --- | --- |
+| `@browsercore/tls` | ^0.4.17 |
+| `@browsercore/http2` | 0.2.14 |
+| `@browsercore/http1` | 0.2.6 |
+| `@browsercore/profiles` | 0.2.6 |
+| `@browsercore/cookies` | 0.2.3 |
+| `@browsercore/crypto` | 0.2.7 |
+| `@browsercore/transport` | 0.2.10 |
+| `@browsercore/fetch` | 0.2.25 |
+
 ## Contributing
 
 Contributions are welcome — bug reports, reproductions, docs and code alike. Start with [CONTRIBUTING.md](CONTRIBUTING.md); the full guide lives in the [browsersmith repo](https://github.com/jverneuer/browsersmith/blob/main/CONTRIBUTING.md). First timer? Check the [`good first issue`](https://github.com/jverneuer/browsercore-devtools/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) label. Security issues: [SECURITY.md](SECURITY.md), never a public issue.
