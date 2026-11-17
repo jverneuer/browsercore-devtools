@@ -8,13 +8,16 @@ describe("assertNever", () => {
     });
 
     it("stringifies the unexpected value in the message", () => {
+        let caught: Error | undefined;
         try {
             assertNever(42 as never);
         } catch (err) {
-            expect((err as Error).message).toContain("42");
-            return;
+            if (err instanceof Error) {
+                caught = err;
+            }
         }
-        throw new Error("expected to throw");
+        // Fails when assertNever did not throw (or threw a non-Error).
+        expect(caught?.message).toContain("42");
     });
 });
 

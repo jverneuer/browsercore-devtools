@@ -1,6 +1,6 @@
 {
     "name": "@browsercore/devtools",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "description": "Developer tooling — packet inspector, TLS/HTTP2 visualizer, profile diff, certificate inspector, benchmark CLI.",
     "repository": {
         "type": "git",
@@ -38,7 +38,7 @@
         "clean": "rm -rf dist",
         "build": "tsc -p tsconfig.json && node scripts/copy-captures.mjs",
         "prepublishOnly": "npm run clean && npm run build",
-        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
         "test": "vitest run",
         "lint": "oxlint --type-aware src/"
     },

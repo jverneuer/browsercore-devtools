@@ -28,7 +28,12 @@ function makeProfile(id: string, overrides: Partial<BrowserProfile> = {}): Brows
 
 describe("diffProfiles — missing-side handling", () => {
     it("reports a missing child on side A", () => {
-        const a = makeProfile("miss-a", { http1: undefined });
+        // A well-typed BrowserProfile always carries every block; this drives
+        // the diff's defensive "<missing>" branch (schema-skew robustness)
+        // with a deliberately degenerate profile, so the http1 hole is forced
+        // past exactOptionalPropertyTypes with the family's documented
+        // test-seam idiom.
+        const a = makeProfile("miss-a", { http1: undefined as never });
         const b = makeProfile("miss-ab");
         registerProfile(a);
         registerProfile(b);
@@ -39,8 +44,9 @@ describe("diffProfiles — missing-side handling", () => {
     });
 
     it("reports a missing child on side B", () => {
+        // Same degenerate-profile seam as the side-A test above.
         const a = makeProfile("miss-ba");
-        const b = makeProfile("miss-bb", { http1: undefined });
+        const b = makeProfile("miss-bb", { http1: undefined as never });
         registerProfile(a);
         registerProfile(b);
         const diff = diffProfiles(a.id, b.id);
