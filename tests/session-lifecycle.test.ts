@@ -41,15 +41,19 @@ describe("inspector session — lifecycle and isolation", () => {
         session.addFrame({ direction: "received", protocol: "tls", bytes: new Uint8Array(), decoded: null });
         const filtered = session.filter((f) => f.protocol === "tls");
         expect(filtered).toHaveLength(2);
-        // Mutate the returned array; the session's own frame list is unaffected.
-        filtered.length = 0;
+        // `filter` must never alias the session's internal frame list: the
+        // result is a fresh array (ReadonlyArray at the type level, so the
+        // identity check replaces the old mutation probe).
+        expect(filtered).not.toBe(session.frames);
         expect(session.frames.length).toBe(2);
     });
 
     it("filter predicate that matches nothing returns an empty array", () => {
         const session = createInspectorSession();
         session.addFrame({ direction: "sent", protocol: "tls", bytes: new Uint8Array(), decoded: null });
-        expect(session.filter((f) => f.protocol === "quic")).toEqual([]);
+        // "http1" is a real PacketProtocol member that matches no added frame —
+        // "quic" is not in the union and no longer compiles.
+        expect(session.filter((f) => f.protocol === "http1")).toEqual([]);
     });
 
     it("filter can match on direction and timestamp fields", () => {

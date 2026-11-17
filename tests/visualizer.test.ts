@@ -198,9 +198,11 @@ describe("visualize empty sessions", () => {
 
 describe("assertNever exhaustiveness", () => {
     it("throws for an unreachable protocol value", () => {
-        // Cast an invalid protocol through the type system to exercise the default branch.
+        // Cast an invalid protocol through the type system to exercise the
+        // default branch; the second hop satisfies assertNever's `never`
+        // parameter the same way as the sibling test below.
         const invalid = "quic" as unknown as PacketProtocol;
-        expect(() => assertNever(invalid)).toThrow(/Unexpected value/u);
+        expect(() => assertNever(invalid as never)).toThrow(/Unexpected value/u);
     });
 
     it("throws for a never value", () => {

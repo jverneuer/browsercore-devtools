@@ -8,7 +8,7 @@
 
 Developer tooling for the browsercore stack: packet inspector, TLS/HTTP visualizers,
 profile diff, certificate inspector, and the `network-devtools` CLI. Depends on the
-library but is NOT required by it — every tool here consumes the public API of the
+library but is NOT required by it: every tool here consumes the public API of the
 lower-level packages, and nothing here is imported by them.
 
 ## Install
@@ -82,7 +82,7 @@ Devtools tracks the **platform-v2 stack**: a canonical `Clock` and the optional
 and assembled by [`browsersmith`](https://github.com/jverneuer/browsersmith),
 the composition root. The inspector still consumes the wire-facing parser
 exports (`parseRecordHeader` from `@browsercore/tls`, `parseFrameHeader` from
-`@browsercore/http2`) — platform-v2 was a type/wiring/injection change only, so
+`@browsercore/http2`); platform-v2 was a type/wiring/injection change only, so
 decoding output is unchanged.
 
 | Package | Version |
@@ -98,7 +98,7 @@ decoding output is unchanged.
 
 ## Contributing
 
-Contributions are welcome — bug reports, reproductions, docs and code alike. Start with [CONTRIBUTING.md](CONTRIBUTING.md); the full guide lives in the [browsersmith repo](https://github.com/jverneuer/browsersmith/blob/main/CONTRIBUTING.md). First timer? Check the [`good first issue`](https://github.com/jverneuer/browsercore-devtools/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) label. Security issues: [SECURITY.md](SECURITY.md), never a public issue.
+Contributions are welcome: bug reports, reproductions, docs and code alike. Start with [CONTRIBUTING.md](CONTRIBUTING.md); the full guide lives in the [browsersmith repo](https://github.com/jverneuer/browsersmith/blob/main/CONTRIBUTING.md). First timer? Check the [`good first issue`](https://github.com/jverneuer/browsercore-devtools/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) label. Security issues: [SECURITY.md](SECURITY.md), never a public issue.
 
 ## License
 
@@ -107,6 +107,6 @@ MIT
 
 <div align="center">
 
-🦄 You inspected all the way down to the bottom of the README. Reward: a unicorn, and an amazing day — that's what the protocol says.
+🦄 You inspected all the way down to the bottom of the README. Reward: a unicorn, and an amazing day. That's what the protocol says.
 
 </div>

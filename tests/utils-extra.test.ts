@@ -23,7 +23,7 @@ describe("toErrorOptions", () => {
 
     it("returns undefined for null and undefined", () => {
         expect(toErrorOptions(null)).toBeUndefined();
-        expect(toErrorOptions()).toBeUndefined();
+        expect(toErrorOptions(undefined)).toBeUndefined();
     });
 
     it("returns undefined for a plain object that is not an Error instance", () => {
@@ -58,33 +58,40 @@ describe("createId", () => {
 
 describe("assertNever", () => {
     it("stringifies objects in the thrown message", () => {
+        let caught: Error | undefined;
         try {
             assertNever({ unexpected: true } as never);
         } catch (err) {
-            expect((err as Error).message).toContain("Unexpected value");
-            expect((err as Error).message).toContain("unexpected");
-            return;
+            if (err instanceof Error) {
+                caught = err;
+            }
         }
-        throw new Error("expected to throw");
+        // Fails when assertNever did not throw (or threw a non-Error).
+        expect(caught?.message).toContain("Unexpected value");
+        expect(caught?.message).toContain("unexpected");
     });
 
     it("stringifies null without throwing a serialization error", () => {
+        let caught: Error | undefined;
         try {
             assertNever(null as never);
         } catch (err) {
-            expect((err as Error).message).toContain("null");
-            return;
+            if (err instanceof Error) {
+                caught = err;
+            }
         }
-        throw new Error("expected to throw");
+        // Fails when assertNever did not throw (or threw a non-Error).
+        expect(caught?.message).toContain("null");
     });
 
     it("throws an Error instance (not a string)", () => {
+        let caught: unknown;
         try {
             assertNever("x" as never);
         } catch (err) {
-            expect(err).toBeInstanceOf(Error);
-            return;
+            caught = err;
         }
-        throw new Error("expected to throw");
+        // Fails when assertNever did not throw; asserts the payload type.
+        expect(caught).toBeInstanceOf(Error);
     });
 });

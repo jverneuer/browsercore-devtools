@@ -46,7 +46,7 @@ describe("exportToHtml", () => {
     });
 
     it("renders a top-level undefined value as null (no label)", () => {
-        const html = exportToHtml("T");
+        const html = exportToHtml("T", undefined);
         expect(html).toContain("null");
     });
 

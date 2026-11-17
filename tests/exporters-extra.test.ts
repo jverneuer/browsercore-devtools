@@ -16,7 +16,7 @@ describe("exportToJson — round-trips and edge values", () => {
         // JSON.stringify(undefined) yields the undefined *value*, which would
         // violate the declared `: string` return type; the `?? "null"` guard
         // canonicalizes it.
-        const out = exportToJson();
+        const out = exportToJson(undefined);
         expect(typeof out).toBe("string");
         expect(out).toBe("null");
     });
